@@ -65,9 +65,10 @@ async function createWindow() {
     height: 960,
     minWidth: 900,
     minHeight: 640,
-    title: "Minha Agenda",
+    title: "CODIFEX AGENDAS",
     backgroundColor: "#111827",
     autoHideMenuBar: true,
+    icon: path.join(__dirname, '..', 'public', 'icon.png'),
     webPreferences: {
       contextIsolation: true,
       nodeIntegration: false,
@@ -98,10 +99,10 @@ app.whenReady().then(async () => {
     await startLocalServer();
     await createWindow();
   } catch (error) {
-    console.error("Falha ao iniciar Minha Agenda:", error);
+    console.error("Falha ao iniciar CODIFEX AGENDAS:", error);
     await dialog.showMessageBox({
       type: "error",
-      title: "Não foi possível iniciar Minha Agenda",
+      title: "Não foi possível iniciar CODIFEX AGENDAS",
       message: "O aplicativo local não conseguiu iniciar.",
       detail: error instanceof Error ? error.message : String(error),
     });

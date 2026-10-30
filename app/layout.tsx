@@ -2,15 +2,19 @@ import type { Metadata, Viewport } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "Minha Agenda",
+  title: "CODIFEX AGENDAS",
   description: "Organize compromissos, tarefas e prazos do seu expediente.",
-  applicationName: "Minha Agenda",
+  applicationName: "CODIFEX AGENDAS",
   manifest: "/manifest.json",
-  appleWebApp: { capable: true, statusBarStyle: "default", title: "Minha Agenda" },
+  icons: {
+    icon: "/icon.png",
+    apple: "/icon.png",
+  },
+  appleWebApp: { capable: true, statusBarStyle: "default", title: "CODIFEX AGENDAS" },
 };
 
 export const viewport: Viewport = {
-  themeColor: "#f7f7fb",
+  themeColor: "#f4f6fb",
   width: "device-width",
   initialScale: 1,
 };

@@ -369,7 +369,7 @@ function WorkItem({ item, onComplete, onEdit, onDelete, showDate = false }: {
 }) {
   const overdue = showDate && item.data < todayInSaoPaulo() && item.recorrencia === "none" && !item.concluido;
   return (
-    <article className={`rounded-xl border line p-3 ${item.concluido ? "opacity-55" : ""}`}>
+    <article className={`rounded-xl border line p-3 transition-shadow hover:shadow-md ${item.concluido ? "opacity-50" : ""}`}>
       <div className="flex items-start gap-3">
         <input type="checkbox" aria-label="Marcar como concluído" checked={item.concluido} onChange={() => onComplete(item)} className="mt-1 h-4 w-4 accent-blue-700" />
         <div className="min-w-0 flex-1">
@@ -748,14 +748,14 @@ export default function Home() {
         reminder.setTime(reminder.getTime() - item.alerta_minutos * 60000);
         const key = `${item.id}-${date}`;
         if (now >= reminder && now.getTime() - reminder.getTime() < 60000 && !localSent.current.has(key)) {
-          new Notification("Lembrete: Minha Agenda", { body: `${item.titulo}${item.hora_inicio ? ` • ${item.hora_inicio.slice(0, 5)}` : ""}`, icon: "/icon.svg" });
+          new Notification("Lembrete: CODIFEX AGENDAS", { body: `${item.titulo}${item.hora_inicio ? ` • ${item.hora_inicio.slice(0, 5)}` : ""}`, icon: "/icon.png" });
           localSent.current.add(key);
         }
       }
       for (const contact of contacts) {
         const key = `birthday-${contact.id}-${today}`;
         if (birthdayOn(contact, today) && !localSent.current.has(key)) {
-          new Notification("Aniversário: Minha Agenda", { body: `Hoje é aniversário de ${contact.nome}.`, icon: "/icon.svg" });
+          new Notification("Aniversário: CODIFEX AGENDAS", { body: `Hoje é aniversário de ${contact.nome}.`, icon: "/icon.png" });
           localSent.current.add(key);
         }
       }
@@ -894,7 +894,7 @@ export default function Home() {
         if (localPermission !== "granted") throw new Error("Permissão de notificações não concedida.");
         localStorage.setItem("minha-agenda-local-alerts", "1");
         setLocalAlerts(true);
-        new Notification("Minha Agenda", { body: "Lembretes ativados neste computador.", icon: "/icon.svg" });
+        new Notification("CODIFEX AGENDAS", { body: "Lembretes ativados neste computador.", icon: "/icon.png" });
         notify("Lembretes ativados neste computador.");
         return;
       }
@@ -936,7 +936,7 @@ export default function Home() {
   }
 
   async function exportBackup() {
-    download(`minha-agenda-backup-${todayInSaoPaulo()}.json`, JSON.stringify({
+    download(`codifex-agendas-backup-${todayInSaoPaulo()}.json`, JSON.stringify({
       exportado_em: new Date().toISOString(), fuso: "America/Sao_Paulo",
       agendamentos: appointments, observacoes: Object.entries(observations).map(([data, anotacao]) => ({ data, anotacao })),
       contatos: contacts, telefones: contacts.flatMap((contact) => (contact.telefones || []).map((phone) => ({ ...phone, contato_id: contact.id }))),
@@ -1032,7 +1032,7 @@ export default function Home() {
   if (!session) return (
     <main className="flex min-h-screen items-center justify-center p-4">
       <form onSubmit={authenticate} className="card w-full max-w-md p-7 shadow-lg">
-        <div className="mb-6 text-center"><div className="mx-auto mb-3 flex h-14 w-14 items-center justify-center rounded-2xl bg-violet-600 text-3xl text-white">▦</div><h1 className="text-2xl font-bold">Minha Agenda</h1><p className="muted mt-2">Compromissos, tarefas e prazos do escritório em um só lugar.</p></div>
+        <div className="mb-6 text-center"><div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center"><img src="/icon.png" alt="CODIFEX AGENDAS" className="h-16 w-16 rounded-2xl object-contain shadow-md" /></div><h1 className="text-2xl font-bold">CODIFEX AGENDAS</h1><p className="muted mt-2">Compromissos, tarefas e prazos do escritório em um só lugar.</p></div>
         <label className="mb-3 block text-sm font-medium">E-mail<input className="field mt-1" type="email" required autoComplete="email" value={email} onChange={(e) => setEmail(e.target.value)} /></label>
         <label className="block text-sm font-medium">Senha<input className="field mt-1" type="password" minLength={6} required autoComplete={authMode === "login" ? "current-password" : "new-password"} value={password} onChange={(e) => setPassword(e.target.value)} /></label>
         {authError && <p className="mt-3 text-sm text-red-600" role="alert">{authError}</p>}
@@ -1048,14 +1048,15 @@ export default function Home() {
     <main className="min-h-screen">
       <header className="surface sticky top-0 z-30 border-b line">
         <div className="app-header mx-auto max-w-[1400px] px-4 py-3 sm:px-6">
-          <button type="button" className="flex items-center gap-2 text-lg font-bold" onClick={() => { setView("day"); setSearch(""); showDate(today); }}><span className="flex h-9 w-9 items-center justify-center rounded-xl bg-violet-600 text-xl text-white">▦</span><span className="hidden sm:inline">Minha Agenda</span></button>
+          <button type="button" className="flex items-center gap-2 text-lg font-bold" onClick={() => { setView("day"); setSearch(""); showDate(today); }}><img src="/icon.png" alt="CODIFEX AGENDAS" className="h-9 w-9 rounded-xl object-contain shadow-sm" /><span className="hidden sm:inline font-bold">CODIFEX AGENDAS</span></button>
           <div className="app-header-search relative">
             <input ref={searchRef} className="field py-2 pl-9" placeholder="Buscar tarefas, clientes, compromissos... (Ctrl+F)" value={search} onChange={(e) => setSearch(e.target.value)} />
-            <span className="muted absolute left-3 top-2">⌕</span>
+            <span className="muted absolute left-3 top-2.5 text-lg pointer-events-none select-none">⌕</span>
           </div>
           <div className="app-header-actions">
             <button type="button" className="btn btn-primary py-2" onClick={() => setAppointmentForm({ ...EMPTY_APPOINTMENT, data: view === "year" || view === "month" || view === "day" || view === "contacts" ? selectedDate : today, ...(view === "tasks" ? { tipo: "tarefa" as const, alerta_minutos: "none" } : {}) })}><span>＋</span><span className="hidden sm:inline">{view === "tasks" ? "Nova tarefa" : "Novo compromisso"}</span></button>
             <button type="button" className="btn btn-ghost px-2 py-2" aria-label={theme === "light" ? "Ativar tema escuro" : "Ativar tema claro"} title={theme === "light" ? "Ativar tema escuro" : "Ativar tema claro"} onClick={changeTheme}>{theme === "light" ? "☾" : "☀"}</button>
+            <button type="button" disabled={pushBusy} className="btn btn-ghost px-2 py-2" aria-label={alertsOn ? "Desativar notificações" : "Ativar notificações"} title={alertsOn ? "Notificações ativas neste dispositivo" : "Ativar notificações neste dispositivo"} onClick={alertsOn ? disablePush : enablePush}>{pushBusy ? "…" : alertsOn ? "🔔" : "🔕"}</button>
             <button type="button" className="btn btn-ghost px-2 py-2" aria-label="Baixar backup dos dados em JSON" title="Baixar backup dos dados em JSON" onClick={() => {
               try {
                 exportBackup();
@@ -1064,7 +1065,7 @@ export default function Home() {
                 notify(`Não foi possível baixar o backup: ${messageOf(error)}`, "error");
               }
             }}>⇩</button>
-            <span className={`rounded-full px-2.5 py-1 text-xs font-medium ${isOnline ? "bg-emerald-100 text-emerald-800" : "bg-amber-100 text-amber-800"}`} title={pendingSync ? `${pendingSync} alteração(ões) aguardando sincronização` : "Dados locais disponíveis"}>{isOnline ? "● Online" : "● Offline"}{pendingSync > 0 ? ` · ${pendingSync} pendente(s)` : ""}</span>
+            <span className={`rounded-full px-2.5 py-0.5 text-xs font-semibold ${isOnline ? "bg-emerald-100 text-emerald-800" : "bg-amber-100 text-amber-800"}`} title={pendingSync ? `${pendingSync} alteração(ões) aguardando sincronização` : "Dados locais disponíveis"}>{isOnline ? "● Online" : "● Offline"}{pendingSync > 0 ? ` · ${pendingSync} pendente(s)` : ""}</span>
             <button type="button" className="btn btn-ghost px-2 py-2" title="Sair" onClick={() => getSupabase().auth.signOut().then(({ error }) => { if (error) notify(error.message, "error"); })}>↪</button>
           </div>
         </div>
@@ -1074,7 +1075,7 @@ export default function Home() {
         {notice && <div role="status" className={`fixed right-4 top-20 z-[60] max-w-sm rounded-xl px-4 py-3 text-sm text-white shadow-xl ${notice.kind === "error" ? "bg-red-600" : "bg-emerald-600"}`}>{notice.text}</div>}
         {!isOnline && <div className="mb-4 rounded-lg border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-900 dark:border-amber-800 dark:bg-amber-950 dark:text-amber-100">Modo offline: agenda, tarefas e edições ficam salvas neste dispositivo e sincronizam com o Supabase quando a conexão voltar.{pendingSync > 0 ? ` ${pendingSync} alteração(ões) aguardando envio.` : ""}</div>}
         <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
-          <div><h1 className="text-2xl font-bold sm:text-3xl">{view === "contacts" ? "Contatos da agenda" : view === "tasks" ? "Tarefas" : view === "year" ? `Agenda ${shownYear}` : view === "month" ? `${MONTHS[shownMonth]} ${shownYear}` : "Agenda do dia"}</h1><p className="muted mt-1 text-sm">{view === "day" ? formatDate(selectedDate) : `Olá, ${session.user.email}`}</p></div>
+          <div><h1 className="text-2xl font-bold tracking-tight sm:text-3xl">{view === "contacts" ? "Contatos da agenda" : view === "tasks" ? "Tarefas" : view === "year" ? `Agenda ${shownYear}` : view === "month" ? `${MONTHS[shownMonth]} ${shownYear}` : "Agenda do dia"}</h1><p className="muted mt-1 text-sm">{view === "day" ? formatDate(selectedDate) : `Olá, ${session.user.email}`}</p></div>
           <div className="flex flex-wrap gap-2">
             <button className={`btn ${view !== "tasks" ? "btn-primary" : "btn-ghost"}`} onClick={() => { setView("day"); showDate(today); }}>Agenda</button>
             <button className={`btn ${view === "tasks" ? "btn-primary" : "btn-ghost"}`} onClick={() => setView("tasks")}>Tarefas</button>
@@ -1204,16 +1205,6 @@ export default function Home() {
             </aside>
           </div>
         )}
-
-        <section className="card mt-6 p-4 sm:p-5">
-          <div className="flex flex-wrap items-center justify-between gap-3">
-            <div>
-              <h2 className="font-semibold">Notificações neste dispositivo</h2>
-              <p className="muted mt-1 text-sm">{alertsOn ? (isElectronApp() ? "Lembretes ativos enquanto o app estiver aberto (inclusive na bandeja)." : "Push ativo: os alertas chegam mesmo com a agenda fechada.") : "Ative para receber lembretes no Windows."}</p>
-            </div>
-            <button disabled={pushBusy} className={alertsOn ? "btn btn-ghost" : "btn btn-primary"} onClick={alertsOn ? disablePush : enablePush}>{pushBusy ? "Aguarde..." : alertsOn ? "Desativar" : "Ativar notificações"}</button>
-          </div>
-        </section>
       </div>
 
       {appointmentForm && <AppointmentForm initial={appointmentForm} busy={busy} onClose={() => setAppointmentForm(null)} onSave={saveAppointment} />}

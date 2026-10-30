@@ -1,5 +1,5 @@
 const CACHE_NAME = "minha-agenda-v1";
-const APP_SHELL = ["/", "/manifest.json", "/icon.svg"];
+const APP_SHELL = ["/", "/manifest.json", "/icon.png"];
 
 self.addEventListener("install", (event) => {
   event.waitUntil(caches.open(CACHE_NAME).then((cache) => cache.addAll(APP_SHELL)));
@@ -33,14 +33,14 @@ self.addEventListener("push", (event) => {
   try { data = event.data ? event.data.json() : {}; } catch { data = { body: event.data?.text() || "" }; }
   const options = {
     body: data.body || "Você tem um compromisso em breve.",
-    icon: "/icon.svg",
-    badge: "/icon.svg",
+    icon: "/icon.png",
+    badge: "/icon.png",
     tag: data.tag || "minha-agenda",
     renotify: false,
     data: { url: data.url || "/", snoozeUrl: data.snoozeUrl || "/" },
     actions: [{ action: "snooze", title: "Adiar 5 min" }, { action: "open", title: "Abrir agenda" }],
   };
-  event.waitUntil(self.registration.showNotification(data.title || "Minha Agenda", options));
+  event.waitUntil(self.registration.showNotification(data.title || "CODIFEX AGENDAS", options));
 });
 
 self.addEventListener("notificationclick", (event) => {

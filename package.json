@@ -28,29 +28,36 @@
     "typescript": "^5.7.3"
   },
   "build": {
-    "appId": "br.com.minhaagenda.desktop",
-    "productName": "Minha Agenda",
+    "appId": "br.com.codifex.agendas",
+    "productName": "CODIFEX AGENDAS",
     "directories": {
       "output": "release/desktop"
     },
     "files": [
       "desktop/main.cjs",
-      "package.json"
+      "package.json",
+      "public/icon.png",
+      "public/icon.ico"
     ],
     "extraResources": [
       {
         "from": ".next/standalone",
         "to": "web",
-        "filter": ["**/*"]
+        "filter": [
+          "**/*"
+        ]
       }
     ],
     "win": {
       "target": [
         {
           "target": "dir",
-          "arch": ["x64"]
+          "arch": [
+            "x64"
+          ]
         }
-      ]
+      ],
+      "icon": "public/icon.ico"
     }
   }
 }

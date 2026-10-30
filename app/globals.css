@@ -1,77 +1,196 @@
 @import "tailwindcss";
 @custom-variant dark (&:where(.dark, .dark *));
 
+/* ─── Tokens de tema ─────────────────────────────────────────────── */
 :root {
   color-scheme: light;
-  --page: #f7f7fb;
+  --page:    #f4f6fb;
   --surface: #ffffff;
-  --text: #222238;
-  --muted: #77778b;
-  --line: #e8e8f0;
-  --accent: #245c9f;
+  --text:    #1e1e2e;
+  --muted:   #6b7280;
+  --line:    #e2e8f0;
+  --accent:  #2563eb;
+
+  --accent-light: color-mix(in srgb, var(--accent) 10%, transparent);
+  --shadow-sm: 0 1px 3px rgba(0,0,0,.06), 0 1px 2px rgba(0,0,0,.04);
+  --shadow-md: 0 4px 12px rgba(0,0,0,.08), 0 2px 6px rgba(0,0,0,.04);
+  --radius:    .9rem;
 }
 
-* { box-sizing: border-box; }
-body { margin: 0; background: var(--page); color: var(--text); font-family: Arial, Helvetica, sans-serif; }
+.dark {
+  color-scheme: dark;
+  --page:    #0f172a;
+  --surface: #1e293b;
+  --text:    #f1f5f9;
+  --muted:   #94a3b8;
+  --line:    #334155;
+  --accent:  #3b82f6;
+
+  --accent-light: color-mix(in srgb, var(--accent) 14%, transparent);
+  --shadow-sm: 0 1px 3px rgba(0,0,0,.25);
+  --shadow-md: 0 4px 12px rgba(0,0,0,.35);
+}
+
+/* ─── Reset & Base ───────────────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  background: var(--page);
+  color: var(--text);
+  font-family: 'Inter', system-ui, -apple-system, 'Segoe UI', Arial, sans-serif;
+  font-size: 15px;
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+}
+
 button, input, textarea, select { font: inherit; }
 button { cursor: pointer; }
-.dark { color-scheme: dark; --page: #111827; --surface: #1f2937; --text: #f9fafb; --muted: #9ca3af; --line: #374151; --accent: #3b82f6; }
-.surface { background: var(--surface); }
-.line { border-color: var(--line); }
-.muted { color: var(--muted); }
-.bg-violet-600 { background-color: var(--accent); }
-.bg-violet-50 { background-color: color-mix(in srgb, var(--accent) 8%, white); }
-.text-violet-600, .text-violet-500 { color: var(--accent); }
-.ring-violet-500 { --tw-ring-color: var(--accent); }
-.dark .bg-violet-50 { background-color: color-mix(in srgb, var(--accent) 14%, var(--surface)); }
-.dark .bg-emerald-100 { background-color: #064e3b; }
-.dark .text-emerald-800 { color: #a7f3d0; }
-.dark .bg-amber-100 { background-color: #78350f; }
-.dark .text-amber-800 { color: #fde68a; }
-.dark .btn-ghost:hover { background-color: #374151; }
-.dark .text-red-600 { color: #fca5a5; }
-.dark .text-pink-800 { color: #fbcfe8; }
-.btn { display: inline-flex; align-items: center; justify-content: center; gap: .45rem; border-radius: .75rem; padding: .65rem .9rem; font-weight: 600; transition: .15s; }
-.btn-primary { background: var(--accent); color: white; }
-.btn-primary:hover { filter: brightness(.94); }
+
+/* ─── Utilitários temáticos ──────────────────────────────────────── */
+.surface  { background: var(--surface); }
+.muted    { color: var(--muted); }
+.line     { border-color: var(--line); }
+
+/* ─── Remapeamento Tailwind → tokens ─────────────────────────────── */
+.bg-violet-600          { background-color: var(--accent) !important; }
+.bg-violet-50           { background-color: color-mix(in srgb, var(--accent) 8%, white) !important; }
+.bg-violet-100          { background-color: color-mix(in srgb, var(--accent) 12%, white) !important; }
+.text-violet-600,
+.text-violet-500,
+.text-violet-900        { color: var(--accent) !important; }
+.text-violet-100        { color: color-mix(in srgb, var(--accent) 60%, white) !important; }
+.ring-violet-500        { --tw-ring-color: var(--accent); }
+
+.dark .bg-violet-50     { background-color: color-mix(in srgb, var(--accent) 14%, var(--surface)) !important; }
+.dark .bg-violet-100    { background-color: color-mix(in srgb, var(--accent) 18%, var(--surface)) !important; }
+.dark .text-violet-900  { color: #e0e7ff !important; }
+.dark .text-violet-100  { color: #c7d2fe !important; }
+.dark .ring-violet-500  { --tw-ring-color: var(--accent); }
+
+.dark .bg-emerald-100   { background-color: #064e3b !important; }
+.dark .text-emerald-800 { color: #a7f3d0 !important; }
+.dark .bg-amber-100     { background-color: #78350f !important; }
+.dark .text-amber-800   { color: #fde68a !important; }
+.dark .text-red-600     { color: #fca5a5 !important; }
+.dark .text-pink-800    { color: #fbcfe8 !important; }
+.dark .bg-red-950       { background-color: #2d0a0a !important; }
+.dark .text-red-200     { color: #fecaca !important; }
+.dark .bg-pink-950      { background-color: #2a0a1a !important; }
+.dark .text-pink-100    { color: #fce7f3 !important; }
+
+/* ─── Botões ─────────────────────────────────────────────────────── */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: .4rem;
+  border-radius: .55rem;
+  padding: .5rem .95rem;
+  font-size: .875rem;
+  font-weight: 600;
+  transition: background .15s, filter .15s, box-shadow .15s, color .15s;
+  white-space: nowrap;
+  border: none;
+  outline: none;
+  line-height: 1.4;
+}
+.btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+.btn-primary {
+  background: var(--accent);
+  color: #fff;
+  box-shadow: var(--shadow-sm);
+}
+.btn-primary:hover:not(:disabled) { filter: brightness(.9); box-shadow: var(--shadow-md); }
+.btn-primary:disabled              { opacity: .55; cursor: not-allowed; }
+
 .btn-ghost { background: transparent; color: var(--text); }
-.btn-ghost:hover { background: color-mix(in srgb, var(--accent) 10%, transparent); }
-.field { width: 100%; border: 1px solid var(--line); background: var(--surface); color: var(--text); border-radius: .7rem; padding: .7rem .8rem; outline: none; }
-.field:focus { border-color: var(--accent); box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 16%, transparent); }
-.card { border: 1px solid var(--line); background: var(--surface); border-radius: 1rem; }
-.app-header { display: grid; grid-template-columns: auto minmax(12rem, 1fr) auto; align-items: center; gap: .75rem; }
-.app-header-search { min-width: 0; width: 100%; }
-.app-header-search .field { min-width: 0; }
-.app-header-actions { display: flex; min-width: 0; align-items: center; justify-content: flex-end; gap: .2rem; }
-.day-workspace { display: grid; gap: 1rem; }
-.day-toolbar { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: .75rem; padding: .75rem 1rem; }
+.btn-ghost:hover:not(:disabled)   { background: var(--accent-light); color: var(--accent); }
+.dark .btn-ghost:hover             { background: rgba(255,255,255,.06) !important; color: var(--text) !important; }
+
+/* ─── Campos de formulário ───────────────────────────────────────── */
+.field {
+  width: 100%;
+  border: 1.5px solid var(--line);
+  background: var(--surface);
+  color: var(--text);
+  border-radius: .55rem;
+  padding: .6rem .85rem;
+  outline: none;
+  transition: border-color .15s, box-shadow .15s;
+}
+.field::placeholder { color: var(--muted); opacity: 1; }
+.field:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 18%, transparent);
+}
+
+/* ─── Cards ──────────────────────────────────────────────────────── */
+.card {
+  border: 1px solid var(--line);
+  background: var(--surface);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-sm);
+}
+
+/* ─── App Header ─────────────────────────────────────────────────── */
+.app-header {
+  display: grid;
+  grid-template-columns: auto minmax(12rem, 1fr) auto;
+  align-items: center;
+  gap: .75rem;
+}
+.app-header-search          { min-width: 0; width: 100%; }
+.app-header-search .field   { min-width: 0; border-radius: 999px; padding-left: 2.25rem; }
+.app-header-actions         { display: flex; min-width: 0; align-items: center; justify-content: flex-end; gap: .2rem; }
+
+/* ─── Toolbar do dia ─────────────────────────────────────────────── */
+.day-workspace  { display: grid; gap: 1rem; max-width: 1320px; margin-inline: auto; }
+.day-toolbar    { display: grid; grid-template-columns: auto minmax(0,1fr) auto; align-items: center; gap: .75rem; padding: .85rem 1.25rem; }
 .day-toolbar > :first-child { justify-self: start; }
-.day-toolbar-date { min-width: 10rem; justify-self: center; border-radius: .8rem; padding: .45rem 1rem; text-align: center; background: color-mix(in srgb, var(--accent) 8%, var(--surface)); }
-.day-toolbar > :last-child { justify-self: end; }
-.day-columns { display: grid; grid-template-columns: minmax(0, 1.7fr) minmax(18rem, .8fr); align-items: start; gap: 1rem; }
-.day-notes { position: sticky; top: 5.5rem; }
+.day-toolbar > :last-child  { justify-self: end; }
+.day-toolbar-date {
+  min-width: 11rem;
+  justify-self: center;
+  border-radius: var(--radius);
+  padding: .55rem 1.25rem;
+  text-align: center;
+  background: var(--accent-light);
+  border: 1px solid color-mix(in srgb, var(--accent) 20%, transparent);
+}
+
+/* ─── Colunas do dia ─────────────────────────────────────────────── */
+.day-columns {
+  display: grid;
+  grid-template-columns: minmax(0, 1.8fr) minmax(19rem, .8fr);
+  align-items: start;
+  gap: 1rem;
+}
+.day-notes      { position: sticky; top: 5.5rem; align-self: start; }
 .day-note-input { min-height: 12rem; resize: vertical; }
-.day-workspace { max-width: 1320px; margin-inline: auto; }
-.day-columns { grid-template-columns: minmax(0, 1.8fr) minmax(19rem, .8fr); gap: 1rem; }
-.day-notes { align-self: start; }
+
+/* ─── Calendário ─────────────────────────────────────────────────── */
 .calendar-day { min-height: 5.2rem; }
+
+/* ─── Responsividade ─────────────────────────────────────────────── */
 @media (max-width: 1050px) {
-  .app-header { grid-template-columns: auto minmax(0, 1fr); }
-  .app-header-search { grid-column: 1 / -1; grid-row: 2; }
-  .app-header-actions { grid-column: 2; grid-row: 1; }
+  .app-header           { grid-template-columns: auto minmax(0,1fr); }
+  .app-header-search    { grid-column: 1/-1; grid-row: 2; }
+  .app-header-actions   { grid-column: 2; grid-row: 1; }
 }
 @media (max-width: 900px) {
-  .day-columns { grid-template-columns: minmax(0, 1fr); }
-  .day-notes { position: static; }
+  .day-columns    { grid-template-columns: minmax(0,1fr); }
+  .day-notes      { position: static; }
   .day-note-input { min-height: 10rem; }
 }
 @media (max-width: 640px) {
-  .calendar-day { min-height: 3.4rem; }
-  .app-header { gap: .5rem; }
-  .app-header-actions { gap: 0; }
-  .app-header-actions .btn { padding-inline: .5rem; }
-  .day-toolbar { grid-template-columns: 1fr 1fr; }
-  .day-toolbar-date { grid-column: 1 / -1; grid-row: 1; }
+  .calendar-day               { min-height: 3.4rem; }
+  .app-header                 { gap: .5rem; }
+  .app-header-actions         { gap: 0; }
+  .app-header-actions .btn    { padding-inline: .5rem; }
+  .day-toolbar                { grid-template-columns: 1fr 1fr; }
+  .day-toolbar-date           { grid-column: 1/-1; grid-row: 1; }
   .day-toolbar > :first-child { justify-self: start; }
-  .day-toolbar > :last-child { justify-self: end; }
+  .day-toolbar > :last-child  { justify-self: end; }
 }
