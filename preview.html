@@ -1,0 +1,308 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Prévia — Agenda e Tarefas</title>
+  <style>
+    :root{font-family:Inter,"Segoe UI",Arial,sans-serif;color:#202b39;background:#f4f6f9;font-synthesis:none}
+    *{box-sizing:border-box}body{margin:0}.top{height:64px;background:#fff;border-bottom:1px solid #e1e6ed;display:flex;align-items:center;padding:0 30px;gap:20px}
+    .brand{display:flex;align-items:center;gap:10px;font-weight:750;font-size:16px;white-space:nowrap}.logo{height:35px;width:35px;background:#245c9f;color:white;border-radius:9px;display:grid;place-items:center;font-size:19px}
+    .search{height:38px;flex:1;max-width:620px;border:1px solid #dfe5ec;border-radius:8px;background:#f8fafc;color:#778294;padding:0 13px;font-size:12px;min-width:120px}
+    .search-results{display:none;margin:0 0 18px}.search-results.visible{display:block}.search-results h2{margin:0 0 12px;font-size:16px}.search-columns{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px}.search-group h3{margin:0 0 8px;font-size:13px}.search-result{display:block;width:100%;margin:0 0 7px;padding:10px;text-align:left;background:transparent;border:1px solid #e1e6ed;border-radius:8px;color:inherit}.search-result span{display:block;margin-top:4px;color:#788597;font-size:11px}@media(max-width:700px){.search-columns{grid-template-columns:1fr}}
+    button{font:inherit;cursor:pointer}.primary{background:#245c9f;color:white;border:0;border-radius:8px;padding:10px 14px;font-weight:650}.ghost{background:#fff;border:1px solid #dce3eb;color:#455366;border-radius:8px;padding:9px 13px;font-weight:600}.icon{background:transparent;border:0;color:#58677a;font-size:18px;padding:7px}
+    main{max-width:1320px;margin:auto;padding:25px 30px}.head{display:flex;align-items:center;justify-content:space-between;gap:15px;margin-bottom:16px}.heading h1{font-size:25px;letter-spacing:-.4px;margin:0 0 5px}.muted{color:#788597;font-size:12px}.eyebrow{font-size:10px;color:#718096;text-transform:uppercase;letter-spacing:.8px;font-weight:700;margin-bottom:6px}
+    .tabs{display:flex;gap:6px}.tab{border:0;background:transparent;color:#5d6b7e;padding:10px 17px;border-radius:8px;font-weight:650}.tab.on{background:#245c9f;color:white}.subnav{display:flex;gap:5px;border-bottom:1px solid #e1e6ed;margin-bottom:18px;padding-bottom:9px}.sub{border:0;background:transparent;color:#68778a;border-radius:7px;padding:8px 12px;font-size:12px}.sub.on{background:#e8f0fa;color:#245c9f;font-weight:650}
+    .layout{display:grid;grid-template-columns:minmax(0,1.4fr) minmax(310px,.75fr);gap:17px;align-items:start}.card{background:white;border:1px solid #e1e6ed;border-radius:11px;padding:17px}.calhead{display:flex;align-items:center;justify-content:space-between;margin-bottom:15px}.calhead h2{font-size:16px;margin:0}.calhead button{border:0;background:white;color:#53657a;padding:8px}.calhead button.primary{background:#245c9f;color:white;border:0;border-radius:8px;padding:10px 14px;font-weight:650}.grid{display:grid;grid-template-columns:repeat(7,1fr);text-align:center}.weekday{font-size:10px;color:#8792a0;padding:9px 0;border-bottom:1px solid #edf0f4}    .day{height:67px;border-bottom:1px solid #f0f2f5;border-right:1px solid #f0f2f5;text-align:left;padding:7px;font-size:11px;color:#495568;position:relative}.day:nth-child(7n){border-right:0}.day.dim{color:#c3c9d1}.day.today{background:#eff5fc;color:#245c9f;font-weight:700}.day.selected{box-shadow:inset 0 0 0 2px #4f80b2}.mark{height:4px;width:4px;border-radius:50%;background:#28669f;display:inline-block;margin-left:4px;vertical-align:middle}.mark.green{background:#36866e}.mark.note-marker{background:#d97706}.eventchip{display:block;margin-top:5px;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;background:#e8f0fa;color:#315b85;border-radius:4px;padding:3px 4px;font-size:9px}.eventchip.green{background:#eaf5ef;color:#397960}
+    .sidehead{display:flex;justify-content:space-between;align-items:center;margin-bottom:13px}.sidehead h2{font-size:15px;margin:0}.sidehead p{font-size:11px;color:#8390a0;margin:4px 0 0}.item{display:flex;gap:10px;border-top:1px solid #edf0f4;padding:12px 0}.item:first-of-type{border-top:0}.time{font-size:11px;font-weight:700;color:#4c5a6d;width:39px;padding-top:2px}.rail{width:3px;border-radius:3px;background:#4280b6;flex:none}.rail.green{background:#36866e}.body{min-width:0;flex:1}.title{font-size:12px;font-weight:700}.details{font-size:10px;color:#7e8998;margin-top:5px}.event-description{white-space:pre-wrap;overflow-wrap:anywhere;line-height:1.5}.tag{display:inline-block;background:#edf3fa;color:#456b91;padding:3px 6px;border-radius:4px;font-size:9px;margin-top:6px}
+    .note{border-top:1px solid #edf0f4;padding-top:14px;margin-top:8px}.notehead{display:flex;justify-content:space-between;font-size:12px;font-weight:650;margin-bottom:8px}.textarea{border:1px solid #e1e6ed;border-radius:7px;padding:10px;color:#606d7d;font-size:11px;line-height:1.55;min-height:75px}
+    .tasks{display:none}.dayview{display:block}.monthview,.yearview,.contactview{display:none}.daytoolbar{display:flex;align-items:center;justify-content:space-between;margin-bottom:15px}.daytoolbar h2{margin:0;font-size:17px}.daytoolbar p{margin:4px 0 0}.dayitem{display:grid;grid-template-columns:58px 3px 1fr auto;align-items:start;gap:12px;border-top:1px solid #edf0f4;padding:16px 3px}.dayitem:first-of-type{border-top:0}.noteinput{width:100%;min-height:75px;border:1px solid #e1e6ed;border-radius:7px;padding:10px;font:inherit;font-size:11px;color:#606d7d}
+    .taskfilters{display:flex;gap:7px;margin:13px 0}.filter{border:1px solid #dce3eb;background:#fff;border-radius:7px;padding:8px 11px;color:#59677a;font-size:11px}.filter.on{background:#eaf1f8;border-color:#cddced;color:#245c9f;font-weight:650}.taskrow{display:flex;gap:11px;border-top:1px solid #edf0f4;padding:14px 2px}.taskrow:first-of-type{border-top:0}.check{height:16px;width:16px;border:1px solid #b9c5d2;border-radius:4px;flex:none}.tasktext{flex:1}.tasktitle{font-size:12px;font-weight:650}.meta{display:flex;flex-wrap:wrap;gap:8px;margin-top:5px;color:#7d8998;font-size:10px}.priority{font-size:9px;font-weight:700;border-radius:20px;padding:3px 7px}.urgent{background:#fff0ef;color:#b94343}.high{background:#fff5e9;color:#b56b1c}.normal{background:#eaf2fb;color:#35679c}.calendarlegend{display:flex;gap:15px;color:#7b8797;font-size:10px;margin-top:12px}.dot{display:inline-block;width:6px;height:6px;background:#28669f;border-radius:50%;margin-right:5px}
+    .modal{position:fixed;inset:0;z-index:20;display:none;align-items:center;justify-content:center;padding:16px;background:#17233480}.modal.open{display:flex}.modalbox{width:min(100%,560px);max-height:90vh;overflow:auto;background:white;border-radius:13px;padding:22px;box-shadow:0 20px 70px #15243b40}.modalhead{display:flex;justify-content:space-between;align-items:center;margin-bottom:16px}.modalhead h2{margin:0;font-size:19px}.modalgrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}.modal label{display:block;color:#465367;font-size:12px;font-weight:600}.modal input,.modal select,.modal textarea{width:100%;margin-top:5px;border:1px solid #dce3eb;border-radius:7px;padding:10px;font:inherit;font-size:13px;color:#263445;background:white}.modal textarea{min-height:75px;resize:vertical}.modalactions{display:flex;justify-content:flex-end;gap:8px;margin-top:16px}.modalerror{display:none;margin-top:10px;color:#bd4545;font-size:12px}.delete-button{color:#bd4545;border-color:#f0caca}.toast{position:fixed;right:18px;bottom:18px;z-index:30;display:none;background:#245c9f;color:white;padding:11px 15px;border-radius:8px;font-size:12px;box-shadow:0 5px 20px #15243b30}.toast.show{display:block}
+    html.dark,html.dark body{background:#111827;color:#f9fafb;color-scheme:dark}html.dark .top,html.dark .card,html.dark .modalbox{background:#1f2937;color:#f9fafb;border-color:#374151}html.dark .search,html.dark .ghost,html.dark .filter,html.dark .modal input,html.dark .modal select,html.dark .modal textarea,html.dark .noteinput,html.dark .textarea,html.dark .search-result{background:#1f2937;color:#f9fafb;border-color:#4b5563}html.dark .icon,html.dark .calhead button:not(.primary),html.dark .sidehead p,html.dark .muted,html.dark .eyebrow,html.dark .details,html.dark .meta,html.dark .time,html.dark .sub,html.dark .tab:not(.on){color:#9ca3af}html.dark .calhead button:not(.primary){background:transparent}html.dark .subnav,html.dark .weekday,html.dark .day,html.dark .item,html.dark .dayitem,html.dark .taskrow,html.dark .note{border-color:#374151}html.dark .day{color:#e5e7eb!important;background-color:transparent!important}html.dark .day.dim{color:#6b7280!important}html.dark .day.today{background:#1e3a8a!important;color:#dbeafe!important}html.dark .day.selected{box-shadow:inset 0 0 0 2px #60a5fa}html.dark .eventchip,html.dark .tag{background:#1e3a5f;color:#bfdbfe}html.dark .sub.on,html.dark .filter.on{background:#1e3a8a;color:#dbeafe;border-color:#1d4ed8}html.dark .eventchip.green{background:#064e3b;color:#a7f3d0}html.dark .mark.note-marker{background:#fbbf24}html.dark .modal label{color:#d1d5db}html.dark .check{border-color:#6b7280}html.dark .priority.urgent{background:#7f1d1d;color:#fecaca}html.dark .priority.high{background:#7c2d12;color:#fed7aa}html.dark .priority.normal{background:#1e3a8a;color:#bfdbfe}html.dark .delete-button{color:#fca5a5;border-color:#7f1d1d}html.dark .ghost:hover,html.dark .filter:hover,html.dark .search-result:hover{background:#374151}
+    @media(max-width:850px){.top{padding:0 15px}.layout{grid-template-columns:1fr}main{padding:19px 15px}.brandname{display:none}.day{height:58px}}
+    @media(max-width:560px){.top{gap:7px}.search{font-size:10px}.head{align-items:flex-start;flex-direction:column}.tabs{width:100%}.tab{flex:1}.day{height:47px;padding:5px;font-size:10px}.eventchip{font-size:8px}.card{padding:12px}.item{gap:7px}}
+  </style>
+</head>
+<body>
+  <header class="top">
+    <div class="brand"><div class="logo">▦</div><span class="brandname">Minha Agenda</span></div>
+    <input class="search" id="globalSearch" type="search" placeholder="⌕  Buscar compromissos, tarefas, contatos... (Ctrl+F)" aria-label="Buscar compromissos, tarefas, observações e contatos">
+    <button class="primary" id="newItem">＋ Novo compromisso</button>
+    <span class="tag">● Offline disponível</span><button class="icon" id="themeToggle" aria-label="Ativar tema escuro" title="Ativar tema escuro">◐</button><button class="icon" id="exportBackup" aria-label="Baixar backup dos dados em JSON" title="Baixar backup dos dados em JSON">⇩</button>
+  </header>
+  <main>
+    <div class="head">
+      <div class="heading"><div class="eyebrow">ORGANIZAÇÃO DO ESCRITÓRIO</div><h1 id="pageTitle">Agenda</h1><div class="muted" id="pageSubtitle">Compromissos e anotações por dia.</div></div>
+      <nav class="tabs"><button class="tab on" id="agendaTab">Agenda</button><button class="tab" id="tasksTab">Tarefas</button></nav>
+    </div>
+    <section id="searchResults" class="search-results card" aria-live="polite"></section>
+    <section id="agendaView">
+      <nav class="subnav"><button class="sub on" id="dayTab">Dia</button><button class="sub" id="monthTab">Mês</button><button class="sub" id="yearTab">Todos os meses</button><button class="sub" id="contactsTab">Contatos</button><label class="muted" style="margin-left:auto">Ano <select id="archiveYear" class="filter"><option>2026</option><option>2025</option><option>2024</option></select></label></nav>
+      <section id="dayView" class="card dayview">
+        <div class="daytoolbar"><button class="ghost" id="dayPrev">← Dia anterior</button><div style="text-align:center"><h2>Terça-feira, 27 de outubro</h2><p class="muted">Agenda do dia · 3 itens</p></div><div><button class="ghost" id="todayButton">Hoje</button> <button class="ghost" id="dayNext">Próximo dia →</button></div></div>
+        <div id="dayDemoEvents"></div>
+        <div class="note"><div class="notehead"><span>Observações do dia</span><span class="muted" id="noteSaveStatus">Salvo neste dispositivo</span></div><textarea class="noteinput" id="dayNote" placeholder="Anote informações importantes para este dia..."></textarea></div>
+      </section>
+      <section id="yearView" class="card yearview"><div class="calhead"><button id="yearPrev">← Ano anterior</button><h2 id="yearTitle">2026 · Todos os meses</h2><button id="yearNext">Ano seguinte →</button><button class="primary" id="generateYear">＋ Gerar ano 2027</button></div><div class="muted" id="yearDescription">Anos futuros só ficam disponíveis após serem gerados, um por vez.</div><div class="calendarlegend" style="display:grid;grid-template-columns:repeat(3,1fr);margin-top:18px" id="yearMonths"></div></section>
+      <section id="contactView" class="card contactview">
+        <div class="sidehead"><div><h2>Contatos da agenda</h2><p>Seus contatos profissionais em um só lugar.</p></div><button class="primary" id="newContact">＋ Novo contato</button></div>
+        <div id="contactList"></div>
+        <p id="contactsEmpty" class="muted" style="display:none;padding:20px 0;text-align:center">Nenhum contato cadastrado. Clique em “Novo contato” para adicionar.</p>
+      </section>
+      <div id="monthView" class="monthview">
+      <div class="layout">
+        <article class="card">
+          <div class="calhead"><button id="prev">← Anterior</button><h2 id="monthName">Outubro 2026</h2><button id="next">Próximo →</button></div>
+          <div class="grid" id="calendar"></div>
+          <div class="calendarlegend"><span><i class="dot"></i>Compromisso</span><span style="color:#36866e">● Tarefa com prazo</span><span>Observação do dia</span></div>
+        </article>
+        <aside class="card">
+          <div class="sidehead"><div><h2 id="selectedDate">Terça-feira, 27 de outubro</h2><p>Compromissos deste dia</p></div><button class="primary" data-new-kind="compromisso" aria-label="Novo compromisso">＋</button></div>
+          <div id="dayItems"></div>
+        </aside>
+      </div>
+    </section>
+    <section id="tasksView" class="tasks card">
+      <div class="sidehead"><div><h2>Minhas tarefas</h2><p id="taskSummary">5 cadastradas · 5 em aberto · 0 concluídas</p></div><button class="primary" data-new-kind="tarefa">＋ Nova tarefa</button></div>
+      <div class="taskfilters"><button class="filter on" data-task-filter="open">A fazer · 5</button><button class="filter" data-task-filter="completed">Concluídas · 0</button><button class="filter" data-task-filter="all">Todas · 5</button></div>
+      <div id="taskList">
+      <div class="taskrow"><span class="check"></span><div class="tasktext"><div class="tasktitle">Enviar proposta comercial atualizada</div><div class="meta"><span class="priority urgent">URGENTE</span><span>Prazo: hoje, 11:00</span><span>Cliente: Grupo Horizonte</span><span>Comercial</span></div></div><button class="ghost" data-edit-item>Editar</button><button class="ghost delete-button" data-delete-item>Excluir</button></div>
+      <div class="taskrow"><span class="check"></span><div class="tasktext"><div class="tasktitle">Cobrar retorno da documentação</div><div class="meta"><span class="priority urgent">URGENTE</span><span style="color:#bd4545">Atrasada · 26/10/2026</span><span>Cliente: Alfa</span></div></div><button class="ghost" data-edit-item>Editar</button><button class="ghost delete-button" data-delete-item>Excluir</button></div>
+      <div class="taskrow"><span class="check"></span><div class="tasktext"><div class="tasktitle">Revisar documentos para assinatura</div><div class="meta"><span class="priority high">ALTA</span><span>Prazo: 28/10/2026</span><span>Projeto Atlas</span></div></div><button class="ghost" data-edit-item>Editar</button><button class="ghost delete-button" data-delete-item>Excluir</button></div>
+      <div class="taskrow"><span class="check"></span><div class="tasktext"><div class="tasktitle">Preparar relatório mensal</div><div class="meta"><span class="priority normal">NORMAL</span><span>Prazo: 30/10/2026</span><span>Financeiro</span></div></div><button class="ghost" data-edit-item>Editar</button><button class="ghost delete-button" data-delete-item>Excluir</button></div>
+      <div class="taskrow"><span class="check"></span><div class="tasktext"><div class="tasktitle">Agendar retorno com fornecedor</div><div class="meta"><span class="priority normal">NORMAL</span><span>Prazo: 03/11/2026</span><span>Administrativo</span></div></div><button class="ghost" data-edit-item>Editar</button><button class="ghost delete-button" data-delete-item>Excluir</button></div>
+      <div id="taskEmptyState" class="muted" style="display:none;padding:22px;text-align:center;border-top:1px solid #edf0f4">Nenhuma tarefa cadastrada. Clique em “Nova tarefa” para adicionar sua primeira tarefa.</div>
+      </div>
+    </section>
+  </main>
+  <div class="modal" id="itemModal" role="dialog" aria-modal="true" aria-labelledby="itemModalTitle">
+    <form class="modalbox" id="itemForm">
+      <div class="modalhead"><h2 id="itemModalTitle">Novo compromisso</h2><button type="button" class="icon" data-close-modal aria-label="Fechar">✕</button></div>
+      <div class="modalgrid">
+        <label id="kindField">Tipo<select id="itemKind"><option value="compromisso">Compromisso</option><option value="tarefa">Tarefa</option></select></label>
+        <label>Prioridade<select id="itemPriority"><option>Normal</option><option>Alta</option><option>Urgente</option><option>Baixa</option></select></label>
+        <label style="grid-column:1/-1">Título *<input id="itemTitle" maxlength="200" required></label>
+        <label>Data / prazo<input id="itemDate" type="text" inputmode="numeric" placeholder="dd/mm/aaaa" maxlength="10" required></label>
+        <label>Categoria<input id="itemCategory" value="Trabalho"></label>
+        <label id="startField">Hora de início<input id="itemStart" type="text" inputmode="numeric" placeholder="HH:mm" maxlength="5"></label>
+        <label id="endField">Hora de término<input id="itemEnd" type="text" inputmode="numeric" placeholder="HH:mm" maxlength="5"></label>
+        <label style="grid-column:1/-1">Cliente / projeto<input id="itemClient"></label>
+        <label style="grid-column:1/-1">Descrição<textarea id="itemDescription"></textarea></label>
+      </div>
+      <p class="modalerror" id="itemError" role="alert"></p>
+      <div class="modalactions"><button type="button" class="ghost" data-close-modal>Cancelar</button><button class="primary">Salvar</button></div>
+    </form>
+  </div>
+  <div class="modal" id="contactModal" role="dialog" aria-modal="true" aria-labelledby="contactModalTitle">
+    <form class="modalbox" id="contactForm">
+      <div class="modalhead"><h2 id="contactModalTitle">Editar contato</h2><button type="button" class="icon" data-close-modal aria-label="Fechar">✕</button></div>
+      <div class="modalgrid">
+        <label style="grid-column:1/-1">Nome *<input id="contactName" maxlength="200" required></label>
+        <label>E-mail<input id="contactEmail" type="email"></label><label>Telefone<input id="contactPhone" type="tel"></label>
+        <label>Empresa<input id="contactCompany"></label><label>Aniversário<input id="contactBirthday" type="text" inputmode="numeric" placeholder="dd/mm/aaaa" maxlength="10"></label>
+        <label style="grid-column:1/-1">Endereço<input id="contactAddress"></label>
+        <label style="grid-column:1/-1">Observações<textarea id="contactNotes"></textarea></label>
+      </div>
+      <div class="modalactions"><button type="button" class="ghost" data-close-modal>Cancelar</button><button class="primary">Salvar contato</button></div>
+    </form>
+  </div>
+  <div class="toast" id="previewToast" role="status"></div>
+  <script>
+    const monthNames=["Janeiro","Fevereiro","Março","Abril","Maio","Junho","Julho","Agosto","Setembro","Outubro","Novembro","Dezembro"];
+    const weekdays=["Seg","Ter","Qua","Qui","Sex","Sáb","Dom"];const now=new Date();now.setHours(12,0,0,0);const currentYear=now.getFullYear();let year=currentYear,month=now.getMonth(),selected=new Date(now),yearLimit=currentYear;const savedYear=Number(localStorage.getItem("minha-agenda-preview-generated-year"));if(Number.isInteger(savedYear)&&savedYear>currentYear&&savedYear<=9999)yearLimit=savedYear;
+    const archiveYear=document.getElementById("archiveYear");
+    function renderArchiveYears(){archiveYear.innerHTML="";for(let archived=yearLimit;archived>=Math.max(1900,currentYear-5);archived--){const option=document.createElement("option");option.value=archived;option.textContent=archived;archiveYear.append(option)}archiveYear.value=year}
+    renderArchiveYears();
+    const calendar=document.getElementById("calendar");
+    const demoEvents=[
+      {id:"sample-meeting",date:isoDate(selected),title:"Reunião de alinhamento",time:"09:00",category:"Trabalho",client:"Equipe comercial",description:"Revisar as prioridades da equipe e alinhar as entregas da semana."},
+      {id:"sample-proposal",date:isoDate(selected),title:"Apresentar proposta revisada",time:"10:30",category:"Comercial",client:"Grupo Horizonte",description:"Apresentar a versão final da proposta e confirmar os próximos passos com o cliente."},
+      {id:"sample-followup",date:isoDate(new Date(selected.getFullYear(),selected.getMonth(),selected.getDate()+2,12)),title:"Enviar documento",time:"14:00",category:"Administrativo",client:""},
+    ];
+    let demoContacts=[];
+    try { demoContacts=JSON.parse(localStorage.getItem("minha-agenda-preview-contacts")||"[]"); } catch { demoContacts=[]; }
+    if(!Array.isArray(demoContacts)||!demoContacts.length)demoContacts=[{id:"sample-contact",name:"Grupo Horizonte",company:"Comercial",email:"contato@horizonte.exemplo",phone:"(11) 99999-0000",birthday:"",address:"",notes:""}];
+    const defaultNote="Levar a versão atualizada da proposta para a reunião e confirmar o retorno do fornecedor.";
+    let demoNotes={};
+    try { demoNotes=JSON.parse(localStorage.getItem("minha-agenda-preview-observations")||"{}"); } catch { demoNotes={}; }
+    if(!Object.keys(demoNotes).length)demoNotes[isoDate(selected)]=defaultNote;
+    const dayNote=document.getElementById("dayNote");
+    let noteSaveTimer;
+    function renderDayNote(){dayNote.value=demoNotes[isoDate(selected)]||""}
+    dayNote.addEventListener("input",()=>{const key=isoDate(selected),value=dayNote.value;if(value.trim())demoNotes[key]=value;else delete demoNotes[key];document.getElementById("noteSaveStatus").textContent="Salvando...";clearTimeout(noteSaveTimer);noteSaveTimer=setTimeout(()=>{try{localStorage.setItem("minha-agenda-preview-observations",JSON.stringify(demoNotes));document.getElementById("noteSaveStatus").textContent="Salvo neste dispositivo"}catch(error){document.getElementById("noteSaveStatus").textContent="Falha ao salvar";showToast(`Não foi possível salvar a observação: ${error.message}`)}renderCalendar()},500)});
+    function formatLongDate(date){return new Intl.DateTimeFormat("pt-BR",{weekday:"long",day:"numeric",month:"long",year:"numeric"}).format(date)}
+    function renderSelectedEvents(){
+      const currentDate=isoDate(selected),events=demoEvents.filter(item=>item.date===currentDate).sort((a,b)=>a.time.localeCompare(b.time));
+      renderDayNote();
+      const dayHost=document.getElementById("dayDemoEvents"),monthHost=document.getElementById("dayItems");
+      document.querySelector("#dayView .daytoolbar h2").textContent=formatLongDate(selected);
+      document.querySelector("#dayView .daytoolbar p").textContent=`Agenda do dia · ${events.length} ${events.length===1?"item":"itens"}`;
+      document.getElementById("selectedDate").textContent=formatLongDate(selected);
+      dayHost.replaceChildren();monthHost.replaceChildren();
+      if(!events.length){const empty=document.createElement("p");empty.className="muted";empty.style.padding="16px 0";empty.textContent="Nenhum compromisso para este dia.";dayHost.append(empty);const monthEmpty=empty.cloneNode(true);monthEmpty.textContent="Sem itens agendados neste dia.";monthHost.append(monthEmpty)}
+      for(const item of events){
+        const row=document.createElement("div");row.className="dayitem";row.dataset.eventId=item.id;
+        const time=document.createElement("div");time.className="time";time.textContent=item.time||"—";
+        const rail=document.createElement("div");rail.className="rail";
+        const body=document.createElement("div");body.className="body";
+        const title=document.createElement("div");title.className="title";title.textContent=item.title;
+        const details=document.createElement("div");details.className="details";details.textContent=item.client;
+        const tag=document.createElement("span");tag.className="tag";tag.textContent=item.category;
+        body.append(title,details,tag);
+        if(item.description){const description=document.createElement("p");description.className="details event-description";description.textContent=`Descrição: ${item.description}`;body.append(description)}
+        const edit=document.createElement("button");edit.className="ghost";edit.type="button";edit.dataset.editItem="";edit.textContent="Editar";
+        row.append(time,rail,body,edit);dayHost.append(row);
+        const monthRow=document.createElement("div");monthRow.className="item";monthRow.dataset.eventId=item.id;
+        const monthTime=document.createElement("div");monthTime.className="time";monthTime.textContent=item.time||"—";
+        const monthRail=document.createElement("div");monthRail.className="rail";
+        const monthBody=document.createElement("div");monthBody.className="body";
+        const monthTitle=document.createElement("div");monthTitle.className="title";monthTitle.textContent=item.title;
+        const monthDetails=document.createElement("div");monthDetails.className="details";monthDetails.textContent=item.client;
+        const monthTag=document.createElement("span");monthTag.className="tag";monthTag.textContent=item.category;
+        monthBody.append(monthTitle,monthDetails,monthTag);monthRow.append(monthTime,monthRail,monthBody);monthHost.append(monthRow)
+      }
+    }
+    function renderCalendar(){
+      calendar.innerHTML="";
+      weekdays.forEach(name=>{const el=document.createElement("div");el.className="weekday";el.textContent=name;calendar.append(el)});
+      const offset=(new Date(year,month,1).getDay()+6)%7,start=new Date(year,month,1-offset,12);
+      for(let i=0;i<42;i++){
+        const cellDate=new Date(start.getFullYear(),start.getMonth(),start.getDate()+i,12),key=isoDate(cellDate);
+        const button=document.createElement("button");button.type="button";button.className="day";button.dataset.date=key;
+        button.style.cssText="border:0;background:transparent;text-align:left;width:100%;font:inherit;cursor:pointer";
+        button.append(document.createTextNode(cellDate.getDate()));
+        if(cellDate.getMonth()!==month)button.classList.add("dim");
+        if(key===isoDate(selected))button.classList.add("today","selected");
+        if(cellDate.getFullYear()>yearLimit){button.disabled=true;button.style.cursor="not-allowed";button.style.opacity=".35"}
+        const events=demoEvents.filter(item=>item.date===key);
+        for(const item of events){const chip=document.createElement("span");chip.className="eventchip";chip.textContent=item.time?`${item.time} ${item.title}`:item.title;button.append(chip)}
+        if(demoNotes[key]?.trim()){const marker=document.createElement("span");marker.className="mark note-marker";marker.title="Observação";button.append(marker)}
+        calendar.append(button);
+      }
+      document.getElementById("monthName").textContent=monthNames[month]+" "+year;
+    }
+    renderCalendar();renderSelectedEvents();
+    calendar.addEventListener("click",event=>{const day=event.target.closest("[data-date]");if(!day||day.disabled)return;selected=new Date(`${day.dataset.date}T12:00:00`);year=selected.getFullYear();month=selected.getMonth();updateSelectedDate();setMode("month")});
+    function changeMonth(amount){const next=new Date(year,month+amount,1,12);if(next.getFullYear()>yearLimit)return;year=next.getFullYear();month=next.getMonth();const day=Math.min(selected.getDate(),new Date(year,month+1,0).getDate());selected=new Date(year,month,day,12);updateSelectedDate()}
+    document.getElementById("prev").onclick=()=>changeMonth(-1);
+    document.getElementById("next").onclick=()=>changeMonth(1);
+    const monthView=document.getElementById("monthView"),dayView=document.getElementById("dayView"),yearView=document.getElementById("yearView"),contactView=document.getElementById("contactView");
+    const subTabs=[document.getElementById("dayTab"),document.getElementById("monthTab"),document.getElementById("yearTab"),document.getElementById("contactsTab")];
+    function renderYear(){document.getElementById("yearTitle").textContent=year+" · Todos os meses";document.getElementById("yearNext").disabled=year>=yearLimit;document.getElementById("generateYear").textContent="＋ Gerar ano "+(yearLimit+1);document.getElementById("generateYear").disabled=yearLimit>=9999;const host=document.getElementById("yearMonths");host.innerHTML="";monthNames.forEach((name,index)=>{const button=document.createElement("button");button.className="filter";button.style.cssText="text-align:left;padding:13px";button.innerHTML=name+"<br><small>Agenda e tarefas</small>";button.onclick=()=>{month=index;renderCalendar();setMode("month")};host.append(button)})}
+    function updateSelectedDate(){renderCalendar();renderSelectedEvents()}
+    function setMode(mode){
+      dayView.style.display=mode==="day"?"block":"none";monthView.style.display=mode==="month"?"block":"none";yearView.style.display=mode==="year"?"block":"none";contactView.style.display=mode==="contacts"?"block":"none";
+      subTabs.forEach(button=>button.classList.remove("on"));({day:subTabs[0],month:subTabs[1],year:subTabs[2],contacts:subTabs[3]})[mode].classList.add("on");
+      document.getElementById("pageTitle").textContent=mode==="day"?"Agenda do dia":mode==="month"?"Calendário mensal":mode==="year"?"Agenda "+year:mode==="contacts"?"Contatos da agenda":"Tarefas";
+      document.getElementById("pageSubtitle").textContent=mode==="day"?"Visualização diária · compromissos e anotações.":mode==="month"?"Todos os compromissos e tarefas deste mês.":mode==="year"?"Consulte a agenda anual e os anos arquivados.":mode==="contacts"?"Contatos dentro da sua agenda.":"Prazos, prioridades e itens concluídos.";
+      document.getElementById("newItem").textContent=mode==="tasks"?"＋ Nova tarefa":"＋ Novo compromisso";
+      if(mode==="year")renderYear();
+    }
+    document.getElementById("dayPrev").onclick=()=>{selected.setDate(selected.getDate()-1);updateSelectedDate()};
+    document.getElementById("dayNext").onclick=()=>{const next=new Date(selected);next.setDate(next.getDate()+1);if(next.getFullYear()<=yearLimit){selected=next;updateSelectedDate()}};
+    document.getElementById("todayButton").onclick=()=>{selected=new Date();selected.setHours(12,0,0,0);year=currentYear;month=selected.getMonth();updateSelectedDate()};
+    document.getElementById("yearPrev").onclick=()=>{year--;renderYear()};
+    document.getElementById("yearNext").onclick=()=>{if(year<yearLimit){year++;renderYear()}};
+    function generateNextYear(){if(yearLimit>=9999)return;yearLimit++;localStorage.setItem("minha-agenda-preview-generated-year",String(yearLimit));year=yearLimit;month=0;selected=new Date(year,0,1,12);renderArchiveYears();updateSelectedDate();setMode("year")}
+    document.getElementById("generateYear").onclick=generateNextYear;
+    document.getElementById("archiveYear").onchange=(event)=>{year=Math.min(Number(event.target.value),yearLimit);setMode("year")};
+    const agenda=document.getElementById("agendaView"),tasks=document.getElementById("tasksView"),agendaTab=document.getElementById("agendaTab"),tasksTab=document.getElementById("tasksTab");
+    let activeTab="agenda";
+    function setTab(isTasks){activeTab=isTasks?"tasks":"agenda";agenda.style.display=isTasks?"none":"block";tasks.style.display=isTasks?"block":"none";agendaTab.classList.toggle("on",!isTasks);tasksTab.classList.toggle("on",isTasks);if(isTasks){subTabs.forEach(button=>button.classList.remove("on"));document.getElementById("pageTitle").textContent="Tarefas";document.getElementById("pageSubtitle").textContent="Prazos, prioridades e itens concluídos.";document.getElementById("newItem").textContent="＋ Nova tarefa"}else setMode("day")}
+    agendaTab.onclick=()=>setTab(false);tasksTab.onclick=()=>setTab(true);
+    document.getElementById("dayTab").onclick=()=>setMode("day");
+    document.getElementById("yearTab").onclick=()=>setMode("year");
+    document.getElementById("monthTab").onclick=()=>setMode("month");
+    document.getElementById("contactsTab").onclick=()=>setMode("contacts");
+    const globalSearch=document.getElementById("globalSearch"),searchResults=document.getElementById("searchResults");
+    function normalizeSearch(value){return value.normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLocaleLowerCase("pt-BR").trim()}
+    function appendSearchGroup(host,title,items,onSelect){
+      const group=document.createElement("div");group.className="search-group";
+      const heading=document.createElement("h3");heading.textContent=`${title} (${items.length})`;group.append(heading);
+      if(!items.length){const empty=document.createElement("p");empty.className="muted";empty.textContent="Nenhum resultado.";group.append(empty)}
+      for(const item of items.slice(0,20)){const button=document.createElement("button");button.type="button";button.className="search-result";const label=document.createElement("strong");label.textContent=item.title;button.append(label);if(item.detail){const detail=document.createElement("span");detail.textContent=item.detail;button.append(detail)}button.addEventListener("click",()=>onSelect(item));group.append(button)}
+      host.append(group)
+    }
+    function renderSearch(){
+      const query=normalizeSearch(globalSearch.value);
+      if(!query){searchResults.classList.remove("visible");agenda.style.display=activeTab==="tasks"?"none":"block";tasks.style.display=activeTab==="tasks"?"block":"none";return}
+      agenda.style.display="none";tasks.style.display="none";searchResults.classList.add("visible");searchResults.replaceChildren();
+      const heading=document.createElement("h2");heading.textContent=`Resultados para “${globalSearch.value.trim()}”`;searchResults.append(heading);
+      const columns=document.createElement("div");columns.className="search-columns";searchResults.append(columns);
+      const appointments=demoEvents.filter(item=>normalizeSearch(`${item.title} ${item.category} ${item.client} ${item.date.split("-").reverse().join("/")} ${item.time}`).includes(query)).map(item=>({title:item.title,detail:`${item.date.split("-").reverse().join("/")} · ${item.time} · ${item.category}`,date:item.date}));
+      const taskRows=[...document.querySelectorAll("#taskList .taskrow")].filter(row=>normalizeSearch(`${row.querySelector(".tasktitle")?.textContent||""} ${row.querySelector(".meta")?.textContent||""}`).includes(query)).map(row=>({title:row.querySelector(".tasktitle")?.textContent||"Tarefa",detail:row.querySelector(".meta")?.textContent||"",row}));
+      const contacts=demoContacts.filter(contact=>normalizeSearch(`${contact.name} ${contact.company} ${contact.email} ${contact.phone} ${contact.birthday} ${contact.address} ${contact.notes}`).includes(query)).map(contact=>({title:contact.name,detail:[contact.company,contact.email,contact.phone].filter(Boolean).join(" · ")}));
+      const notes=Object.entries(demoNotes).filter(([date,note])=>note.trim()&&normalizeSearch(`${date.split("-").reverse().join("/")} ${note}`).includes(query)).map(([date,note])=>({title:date.split("-").reverse().join("/"),detail:note,date}));
+      appendSearchGroup(columns,"Compromissos",appointments,item=>{globalSearch.value="";renderSearch();setTab(false);selected=new Date(`${item.date}T12:00:00`);year=selected.getFullYear();month=selected.getMonth();updateSelectedDate()});
+      appendSearchGroup(columns,"Tarefas",taskRows,item=>{globalSearch.value="";renderSearch();setTab(true);item.row.scrollIntoView({behavior:"smooth",block:"center"})});
+      appendSearchGroup(columns,"Contatos",contacts,()=>{globalSearch.value="";renderSearch();setTab(false);setMode("contacts")});
+      appendSearchGroup(columns,"Observações",notes,item=>{globalSearch.value="";renderSearch();setTab(false);selected=new Date(`${item.date}T12:00:00`);year=selected.getFullYear();month=selected.getMonth();updateSelectedDate();setMode("day")});
+    }
+    globalSearch.addEventListener("input",renderSearch);
+    window.addEventListener("keydown",event=>{if((event.ctrlKey||event.metaKey)&&event.key.toLowerCase()==="f"){event.preventDefault();globalSearch.focus()}});
+    const itemModal=document.getElementById("itemModal"),itemForm=document.getElementById("itemForm"),contactModal=document.getElementById("contactModal"),contactForm=document.getElementById("contactForm");
+    const itemTitle=document.getElementById("itemTitle"),itemKind=document.getElementById("itemKind"),itemStart=document.getElementById("itemStart"),itemEnd=document.getElementById("itemEnd"),itemDate=document.getElementById("itemDate");
+    let editingItemTitle=null,editingContactId=null;
+    function renderContacts(){
+      const host=document.getElementById("contactList");host.replaceChildren();
+      demoContacts.forEach(contact=>{const row=document.createElement("article");row.className="taskrow";row.dataset.contactId=contact.id;const body=document.createElement("div");body.className="tasktext";const name=document.createElement("div");name.className="tasktitle";name.textContent=contact.name;body.append(name);const meta=document.createElement("div");meta.className="meta";[contact.company,contact.email,contact.phone,contact.birthday?`Aniversário: ${contact.birthday}`:""].filter(Boolean).forEach(value=>{const span=document.createElement("span");span.textContent=value;meta.append(span)});body.append(meta);if(contact.address){const address=document.createElement("div");address.className="details";address.textContent=contact.address;body.append(address)}if(contact.notes){const notes=document.createElement("div");notes.className="details";notes.textContent=contact.notes;body.append(notes)}const edit=document.createElement("button");edit.type="button";edit.className="ghost";edit.dataset.editContact=contact.id;edit.textContent="Editar";row.append(body,edit);host.append(row)});
+      document.getElementById("contactsEmpty").style.display=demoContacts.length?"none":"block";
+    }
+    function persistContacts(){try{localStorage.setItem("minha-agenda-preview-contacts",JSON.stringify(demoContacts))}catch(error){showToast(`Contato alterado na prévia, mas não foi possível salvar neste dispositivo: ${error.message}`)}}
+    function openContactForm(contact=null){editingContactId=contact?.id||null;contactForm.reset();document.getElementById("contactModalTitle").textContent=contact?"Editar contato":"Novo contato";document.getElementById("contactName").value=contact?.name||"";document.getElementById("contactEmail").value=contact?.email||"";document.getElementById("contactPhone").value=contact?.phone||"";document.getElementById("contactCompany").value=contact?.company||"";document.getElementById("contactBirthday").value=contact?.birthday||"";document.getElementById("contactAddress").value=contact?.address||"";document.getElementById("contactNotes").value=contact?.notes||"";contactModal.classList.add("open");document.getElementById("contactName").focus()}
+    function isoDate(date){return `${date.getFullYear()}-${String(date.getMonth()+1).padStart(2,"0")}-${String(date.getDate()).padStart(2,"0")}`}
+    function formatBrazilianDate(value){const [year,month,day]=value.split("-");return year&&month&&day?`${day}/${month}/${year}`:""}
+    function parseBrazilianDate(value){const match=/^(\d{2})\/(\d{2})\/(\d{4})$/.exec(value);if(!match)return null;const [,day,month,year]=match,parsed=new Date(Number(year),Number(month)-1,Number(day),12);return parsed.getFullYear()===Number(year)&&parsed.getMonth()===Number(month)-1&&parsed.getDate()===Number(day)?`${year}-${month}-${day}`:null}
+    function maskDate(value){const digits=value.replace(/\D/g,"").slice(0,8);return digits.length<=2?digits:digits.length<=4?`${digits.slice(0,2)}/${digits.slice(2)}`:`${digits.slice(0,2)}/${digits.slice(2,4)}/${digits.slice(4)}`}
+    function maskTime(value){const digits=value.replace(/\D/g,"").slice(0,4);return digits.length<=2?digits:`${digits.slice(0,2)}:${digits.slice(2)}`}
+    function validTime(value){return !value||/^([01]\d|2[0-3]):([0-5]\d)$/.test(value)}
+    function setItemKind(kind){itemKind.value=kind;document.getElementById("itemModalTitle").textContent=editingItemTitle?(kind==="tarefa"?"Editar tarefa":"Editar compromisso"):(kind==="tarefa"?"Nova tarefa":"Novo compromisso");document.getElementById("startField").style.display=kind==="tarefa"?"none":"block";document.getElementById("endField").style.display=kind==="tarefa"?"none":"block"}
+    function openItemModal(kind, target=null){editingItemTitle=target;itemForm.reset();document.getElementById("itemError").style.display="none";setItemKind(kind);itemDate.value=formatBrazilianDate(isoDate(selected));document.getElementById("itemCategory").value="Trabalho";if(target){const event=demoEvents.find(item=>item.id===target.dataset.eventId),title=target.querySelector(".title,.tasktitle");itemTitle.value=event?.title||title?.textContent?.trim()||"";itemDate.value=formatBrazilianDate(event?.date||isoDate(selected));itemStart.value=event?.time||"";document.getElementById("itemCategory").value=event?.category||"Trabalho";document.getElementById("itemClient").value=event?.client||"";document.getElementById("itemDescription").value=event?.description||"";document.getElementById("itemModalTitle").textContent=kind==="tarefa"?"Editar tarefa":"Editar compromisso"}itemModal.classList.add("open");itemTitle.focus()}
+    function showToast(message){const toast=document.getElementById("previewToast");toast.textContent=message;toast.classList.add("show");setTimeout(()=>toast.classList.remove("show"),2500)}
+    let taskFilter="open";
+    function renderTasks(){const rows=[...document.querySelectorAll("#tasksView .taskrow")],open=rows.filter(row=>row.dataset.completed!=="true").length,completed=rows.length-open;document.getElementById("taskSummary").textContent=`${rows.length} cadastrada(s) · ${open} em aberto · ${completed} concluída(s)`;document.querySelector('[data-task-filter="open"]').textContent=`A fazer · ${open}`;document.querySelector('[data-task-filter="completed"]').textContent=`Concluídas · ${completed}`;document.querySelector('[data-task-filter="all"]').textContent=`Todas · ${rows.length}`;document.querySelectorAll("[data-task-filter]").forEach(button=>button.classList.toggle("on",button.dataset.taskFilter===taskFilter));rows.forEach(row=>{row.style.display=taskFilter==="all"||((taskFilter==="completed")===(row.dataset.completed==="true"))?"flex":"none"});const empty=document.getElementById("taskEmptyState");empty.style.display=rows.length===0||!rows.some(row=>row.style.display!=="none")?"block":"none";empty.textContent=rows.length===0?"Nenhuma tarefa cadastrada. Clique em “Nova tarefa” para adicionar sua primeira tarefa.":taskFilter==="completed"?"Nenhuma tarefa concluída ainda.":"Nenhuma tarefa em aberto."}
+    document.querySelectorAll("[data-task-filter]").forEach(button=>button.addEventListener("click",()=>{taskFilter=button.dataset.taskFilter;renderTasks()}));
+    renderTasks();
+    const storedTheme=localStorage.getItem("minha-agenda-preview-theme")==="dark"?"dark":"light";
+    document.documentElement.classList.toggle("dark",storedTheme==="dark");
+    document.body.classList.toggle("dark",storedTheme==="dark");
+    const themeToggle=document.getElementById("themeToggle");
+    function updateThemeButton(){const dark=document.documentElement.classList.contains("dark");themeToggle.setAttribute("aria-label",dark?"Ativar tema claro":"Ativar tema escuro");themeToggle.title=dark?"Ativar tema claro":"Ativar tema escuro";themeToggle.textContent=dark?"☀":"◐"}
+    updateThemeButton();
+    themeToggle.addEventListener("click",()=>{const dark=!document.documentElement.classList.contains("dark");document.documentElement.classList.toggle("dark",dark);document.body.classList.toggle("dark",dark);localStorage.setItem("minha-agenda-preview-theme",dark?"dark":"light");updateThemeButton()});
+    document.getElementById("exportBackup").addEventListener("click",()=>{try{const rows=[...document.querySelectorAll("#tasksView .taskrow")].map(row=>({titulo:row.querySelector(".tasktitle")?.textContent||"",concluida:row.dataset.completed==="true"}));const backup={exportado_em:new Date().toISOString(),ambiente:"prévia demonstrativa",compromissos:demoEvents,tarefas:rows};const url=URL.createObjectURL(new Blob([JSON.stringify(backup,null,2)],{type:"application/json;charset=utf-8"}));const link=document.createElement("a");link.href=url;link.download="minha-agenda-backup-previa.json";link.click();setTimeout(()=>URL.revokeObjectURL(url),1000);showToast("Backup JSON demonstrativo baixado.")}catch(error){showToast(`Não foi possível gerar o backup: ${error.message}`)}});
+    document.getElementById("newItem").onclick=()=>openItemModal(activeTab==="tasks"?"tarefa":"compromisso");
+    document.querySelectorAll("[data-new-kind]").forEach(button=>button.addEventListener("click",()=>openItemModal(button.dataset.newKind)));
+    document.getElementById("newContact").addEventListener("click",()=>openContactForm());
+    document.getElementById("contactList").addEventListener("click",event=>{const button=event.target.closest("[data-edit-contact]");if(!button)return;const contact=demoContacts.find(item=>item.id===button.dataset.editContact);if(contact)openContactForm(contact)});
+    document.addEventListener("click",event=>{const deleteButton=event.target.closest("[data-delete-item]");if(deleteButton){const row=deleteButton.closest(".taskrow"),title=row?.querySelector(".tasktitle")?.textContent||"esta tarefa";if(row&&confirm(`Excluir "${title}"?`)){row.remove();renderTasks();showToast("Tarefa excluída da prévia.")}return}const edit=event.target.closest("[data-edit-item]");if(edit){const target=edit.closest(".dayitem,.taskrow,.item");openItemModal(target?.closest("#tasksView")?"tarefa":"compromisso",target);return}});
+    document.querySelectorAll("[data-close-modal]").forEach(button=>button.addEventListener("click",()=>{itemModal.classList.remove("open");contactModal.classList.remove("open")}));
+    [itemModal,contactModal].forEach(modal=>modal.addEventListener("click",event=>{if(event.target===modal)modal.classList.remove("open")}));
+    itemKind.addEventListener("change",()=>setItemKind(itemKind.value));
+    itemDate.addEventListener("input",()=>{const cursor=itemDate.selectionStart,previous=itemDate.value;itemDate.value=maskDate(previous);if(cursor===previous.length)itemDate.setSelectionRange(itemDate.value.length,itemDate.value.length)});
+    [itemStart,itemEnd].forEach(input=>input.addEventListener("input",()=>{const cursor=input.selectionStart,previous=input.value;input.value=maskTime(previous);if(cursor===previous.length)input.setSelectionRange(input.value.length,input.value.length)}));
+    itemForm.addEventListener("submit",event=>{
+      event.preventDefault();
+      const title=itemTitle.value.trim();
+      const parsedDate=parseBrazilianDate(itemDate.value);
+      if(!parsedDate){const error=document.getElementById("itemError");error.textContent="Informe uma data válida no formato dd/mm/aaaa.";error.style.display="block";return}
+      if(!validTime(itemStart.value)||!validTime(itemEnd.value)){const error=document.getElementById("itemError");error.textContent="Informe os horários no formato de 24 horas HH:mm.";error.style.display="block";return}
+      if(itemKind.value==="compromisso"&&itemStart.value&&itemEnd.value&&itemEnd.value<=itemStart.value){const error=document.getElementById("itemError");error.textContent="A hora de término deve ser posterior à hora de início.";error.style.display="block";return}
+      const values={title,date:parsedDate,time:itemStart.value,category:document.getElementById("itemCategory").value,client:document.getElementById("itemClient").value.trim(),description:document.getElementById("itemDescription").value.trim()};
+      if(itemKind.value==="tarefa"){
+        if(editingItemTitle){editingItemTitle.querySelector(".tasktitle").textContent=title;editingItemTitle.querySelector(".meta").textContent=`Prazo: ${values.date.split("-").reverse().join("/")} · ${values.category}`}
+        else{const row=document.createElement("div");row.className="taskrow";row.innerHTML='<span class="check"></span><div class="tasktext"><div class="tasktitle"></div><div class="meta"></div></div><button class="ghost" data-edit-item>Editar</button><button class="ghost delete-button" data-delete-item>Excluir</button>';row.querySelector(".tasktitle").textContent=title;row.querySelector(".meta").textContent=`Prazo: ${values.date.split("-").reverse().join("/")} · ${values.category}`;document.getElementById("tasksView").append(row)}
+      }else{
+        if(editingItemTitle){const eventIndex=demoEvents.findIndex(item=>item.id===editingItemTitle.dataset.eventId);if(eventIndex>=0)demoEvents[eventIndex]={...demoEvents[eventIndex],...values};else demoEvents.push({id:`demo-${Date.now()}`,...values})}
+        else demoEvents.push({id:`demo-${Date.now()}`,...values})
+      }
+      itemModal.classList.remove("open");renderTasks();renderCalendar();renderSelectedEvents();showToast(editingItemTitle?"Alterações salvas na prévia.":"Item adicionado à prévia.")
+    });
+    document.getElementById("contactBirthday").addEventListener("input",event=>{const input=event.currentTarget,digits=input.value.replace(/\D/g,"").slice(0,8);input.value=digits.length<=2?digits:digits.length<=4?`${digits.slice(0,2)}/${digits.slice(2)}`:`${digits.slice(0,2)}/${digits.slice(2,4)}/${digits.slice(4)}`});
+    contactForm.addEventListener("submit",event=>{event.preventDefault();const contact={id:editingContactId||`contact-${Date.now()}`,name:document.getElementById("contactName").value.trim(),email:document.getElementById("contactEmail").value.trim(),phone:document.getElementById("contactPhone").value.trim(),company:document.getElementById("contactCompany").value.trim(),birthday:document.getElementById("contactBirthday").value.trim(),address:document.getElementById("contactAddress").value.trim(),notes:document.getElementById("contactNotes").value.trim()};if(editingContactId)demoContacts=demoContacts.map(item=>item.id===editingContactId?contact:item);else demoContacts.push(contact);persistContacts();renderContacts();contactModal.classList.remove("open");showToast(editingContactId?"Contato atualizado na prévia.":"Contato salvo na prévia.")});
+    window.addEventListener("keydown",event=>{if(event.key==="Escape"){itemModal.classList.remove("open");contactModal.classList.remove("open")}});
+    renderContacts();updateSelectedDate();setMode("day");
+  </script>
+</body>
+</html>

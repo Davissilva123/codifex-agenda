@@ -1,0 +1,77 @@
+@import "tailwindcss";
+@custom-variant dark (&:where(.dark, .dark *));
+
+:root {
+  color-scheme: light;
+  --page: #f7f7fb;
+  --surface: #ffffff;
+  --text: #222238;
+  --muted: #77778b;
+  --line: #e8e8f0;
+  --accent: #245c9f;
+}
+
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--page); color: var(--text); font-family: Arial, Helvetica, sans-serif; }
+button, input, textarea, select { font: inherit; }
+button { cursor: pointer; }
+.dark { color-scheme: dark; --page: #111827; --surface: #1f2937; --text: #f9fafb; --muted: #9ca3af; --line: #374151; --accent: #3b82f6; }
+.surface { background: var(--surface); }
+.line { border-color: var(--line); }
+.muted { color: var(--muted); }
+.bg-violet-600 { background-color: var(--accent); }
+.bg-violet-50 { background-color: color-mix(in srgb, var(--accent) 8%, white); }
+.text-violet-600, .text-violet-500 { color: var(--accent); }
+.ring-violet-500 { --tw-ring-color: var(--accent); }
+.dark .bg-violet-50 { background-color: color-mix(in srgb, var(--accent) 14%, var(--surface)); }
+.dark .bg-emerald-100 { background-color: #064e3b; }
+.dark .text-emerald-800 { color: #a7f3d0; }
+.dark .bg-amber-100 { background-color: #78350f; }
+.dark .text-amber-800 { color: #fde68a; }
+.dark .btn-ghost:hover { background-color: #374151; }
+.dark .text-red-600 { color: #fca5a5; }
+.dark .text-pink-800 { color: #fbcfe8; }
+.btn { display: inline-flex; align-items: center; justify-content: center; gap: .45rem; border-radius: .75rem; padding: .65rem .9rem; font-weight: 600; transition: .15s; }
+.btn-primary { background: var(--accent); color: white; }
+.btn-primary:hover { filter: brightness(.94); }
+.btn-ghost { background: transparent; color: var(--text); }
+.btn-ghost:hover { background: color-mix(in srgb, var(--accent) 10%, transparent); }
+.field { width: 100%; border: 1px solid var(--line); background: var(--surface); color: var(--text); border-radius: .7rem; padding: .7rem .8rem; outline: none; }
+.field:focus { border-color: var(--accent); box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 16%, transparent); }
+.card { border: 1px solid var(--line); background: var(--surface); border-radius: 1rem; }
+.app-header { display: grid; grid-template-columns: auto minmax(12rem, 1fr) auto; align-items: center; gap: .75rem; }
+.app-header-search { min-width: 0; width: 100%; }
+.app-header-search .field { min-width: 0; }
+.app-header-actions { display: flex; min-width: 0; align-items: center; justify-content: flex-end; gap: .2rem; }
+.day-workspace { display: grid; gap: 1rem; }
+.day-toolbar { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: .75rem; padding: .75rem 1rem; }
+.day-toolbar > :first-child { justify-self: start; }
+.day-toolbar-date { min-width: 10rem; justify-self: center; border-radius: .8rem; padding: .45rem 1rem; text-align: center; background: color-mix(in srgb, var(--accent) 8%, var(--surface)); }
+.day-toolbar > :last-child { justify-self: end; }
+.day-columns { display: grid; grid-template-columns: minmax(0, 1.7fr) minmax(18rem, .8fr); align-items: start; gap: 1rem; }
+.day-notes { position: sticky; top: 5.5rem; }
+.day-note-input { min-height: 12rem; resize: vertical; }
+.day-workspace { max-width: 1320px; margin-inline: auto; }
+.day-columns { grid-template-columns: minmax(0, 1.8fr) minmax(19rem, .8fr); gap: 1rem; }
+.day-notes { align-self: start; }
+.calendar-day { min-height: 5.2rem; }
+@media (max-width: 1050px) {
+  .app-header { grid-template-columns: auto minmax(0, 1fr); }
+  .app-header-search { grid-column: 1 / -1; grid-row: 2; }
+  .app-header-actions { grid-column: 2; grid-row: 1; }
+}
+@media (max-width: 900px) {
+  .day-columns { grid-template-columns: minmax(0, 1fr); }
+  .day-notes { position: static; }
+  .day-note-input { min-height: 10rem; }
+}
+@media (max-width: 640px) {
+  .calendar-day { min-height: 3.4rem; }
+  .app-header { gap: .5rem; }
+  .app-header-actions { gap: 0; }
+  .app-header-actions .btn { padding-inline: .5rem; }
+  .day-toolbar { grid-template-columns: 1fr 1fr; }
+  .day-toolbar-date { grid-column: 1 / -1; grid-row: 1; }
+  .day-toolbar > :first-child { justify-self: start; }
+  .day-toolbar > :last-child { justify-self: end; }
+}
