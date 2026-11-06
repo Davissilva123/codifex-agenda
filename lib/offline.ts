@@ -1,6 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 
-export type OfflineTable = "agendamentos" | "contatos" | "telefones" | "observacoes";
+export type OfflineTable = "agendamentos" | "contatos" | "telefones" | "observacoes" | "notas" | "categorias" | "tipos_agendamento";
 type Mutation = {
   id: string;
   table: OfflineTable;
@@ -14,9 +14,12 @@ export interface LocalAgendaData {
   contatos: Record<string, unknown>[];
   telefones: Record<string, unknown>[];
   observacoes: Record<string, unknown>[];
+  notas?: Record<string, unknown>[];
+  categorias?: Record<string, unknown>[];
+  tipos_agendamento?: Record<string, unknown>[];
 }
 
-const emptyData = (): LocalAgendaData => ({ agendamentos: [], contatos: [], telefones: [], observacoes: [] });
+const emptyData = (): LocalAgendaData => ({ agendamentos: [], contatos: [], telefones: [], observacoes: [], notas: [], categorias: [], tipos_agendamento: [] });
 const key = (userId: string, suffix: string) => `minha-agenda:${userId}:${suffix}`;
 
 function readJson<T>(storageKey: string, fallback: T): T {
@@ -30,10 +33,17 @@ function readJson<T>(storageKey: string, fallback: T): T {
 }
 
 export function readLocalAgenda(userId: string): LocalAgendaData {
-  return readJson(key(userId, "data"), emptyData());
+  const data = readJson(key(userId, "data"), emptyData());
+  if (!data.notas) data.notas = [];
+  if (!data.categorias) data.categorias = [];
+  if (!data.tipos_agendamento) data.tipos_agendamento = [];
+  return data;
 }
 
 export function saveLocalAgenda(userId: string, data: LocalAgendaData): void {
+  if (!data.notas) data.notas = [];
+  if (!data.categorias) data.categorias = [];
+  if (!data.tipos_agendamento) data.tipos_agendamento = [];
   localStorage.setItem(key(userId, "data"), JSON.stringify(data));
 }
 
@@ -54,25 +64,36 @@ export async function syncOfflineMutations(userId: string, supabase: SupabaseCli
   for (const mutation of pending) {
     const filters = Object.entries(mutation.filters || {});
     let errorMessage: string | null = null;
-    if (mutation.operation === "insert") {
-      let query = supabase.from(mutation.table).insert(mutation.record || {});
-      for (const [column, value] of filters) query = query.eq(column, value);
-      errorMessage = (await query).error?.message || null;
-    } else if (mutation.operation === "upsert") {
-      let query = supabase.from(mutation.table).upsert(mutation.record || {}, { onConflict: "user_id,data" });
-      for (const [column, value] of filters) query = query.eq(column, value);
-      errorMessage = (await query).error?.message || null;
-    } else if (mutation.operation === "update") {
-      let query = supabase.from(mutation.table).update(mutation.record || {});
-      for (const [column, value] of filters) query = query.eq(column, value);
-      errorMessage = (await query).error?.message || null;
-    } else {
-      let query = supabase.from(mutation.table).delete();
-      for (const [column, value] of filters) query = query.eq(column, value);
-      errorMessage = (await query).error?.message || null;
+    try {
+      if (mutation.operation === "insert") {
+        let query = supabase.from(mutation.table).insert(mutation.record || {});
+        for (const [column, value] of filters) query = query.eq(column, value);
+        errorMessage = (await query).error?.message || null;
+      } else if (mutation.operation === "upsert") {
+        let query = supabase.from(mutation.table).upsert(mutation.record || {}, { onConflict: mutation.table === "observacoes" ? "user_id,data" : "id" });
+        for (const [column, value] of filters) query = query.eq(column, value);
+        errorMessage = (await query).error?.message || null;
+      } else if (mutation.operation === "update") {
+        let query = supabase.from(mutation.table).update(mutation.record || {});
+        for (const [column, value] of filters) query = query.eq(column, value);
+        errorMessage = (await query).error?.message || null;
+      } else {
+        let query = supabase.from(mutation.table).delete();
+        for (const [column, value] of filters) query = query.eq(column, value);
+        errorMessage = (await query).error?.message || null;
+      }
+    } catch (err: unknown) {
+      errorMessage = err instanceof Error ? err.message : String(err);
     }
 
-    if (errorMessage) throw new Error(errorMessage);
+    if (errorMessage) {
+      // Se a tabela 'notas' ainda não foi criada no banco remoto, não bloqueia outras sincronizações
+      if (mutation.table === "notas" && /relation.*does not exist|schema cache/i.test(errorMessage)) {
+        console.warn("A tabela 'notas' ainda não existe no Supabase. As notas permanecem salvas localmente.");
+        continue;
+      }
+      throw new Error(errorMessage);
+    }
 
     const latest = readJson<Mutation[]>(storageKey, []);
     localStorage.setItem(storageKey, JSON.stringify(latest.filter((item) => item.id !== mutation.id)));

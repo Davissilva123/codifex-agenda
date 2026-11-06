@@ -28,6 +28,53 @@ export function formatDate(value: string): string {
   return `${day}/${month}/${year}`;
 }
 
+export function shiftDate(dateStr: string, amountOfDays: number): string {
+  const date = parseDate(dateStr);
+  date.setDate(date.getDate() + amountOfDays);
+  return dateKey(date);
+}
+
+export interface WeekDayInfo {
+  key: string;
+  date: Date;
+  weekday: string;
+  dayNumber: number;
+  monthNumber: number;
+}
+
+export function getWeekDays(dateStr: string): WeekDayInfo[] {
+  const current = parseDate(dateStr);
+  const dayOffset = (current.getDay() + 6) % 7; // Seg = 0, Dom = 6
+  const monday = new Date(current.getFullYear(), current.getMonth(), current.getDate() - dayOffset, 12);
+
+  return Array.from({ length: 7 }, (_, i) => {
+    const day = new Date(monday.getFullYear(), monday.getMonth(), monday.getDate() + i, 12);
+    return {
+      key: dateKey(day),
+      date: day,
+      weekday: WEEKDAYS[i],
+      dayNumber: day.getDate(),
+      monthNumber: day.getMonth() + 1,
+    };
+  });
+}
+
+export function formatWeekRange(dateStr: string): string {
+  const week = getWeekDays(dateStr);
+  const start = week[0];
+  const end = week[6];
+  const startDay = String(start.dayNumber).padStart(2, "0");
+  const endDay = String(end.dayNumber).padStart(2, "0");
+  const startMonth = String(start.monthNumber).padStart(2, "0");
+  const endMonth = String(end.monthNumber).padStart(2, "0");
+  const year = end.date.getFullYear();
+
+  if (startMonth === endMonth) {
+    return `${startDay} a ${endDay} de ${MONTHS[end.monthNumber - 1]} de ${year}`;
+  }
+  return `${startDay}/${startMonth} a ${endDay}/${endMonth}/${year}`;
+}
+
 export function monthGrid(year: number, month: number): Date[] {
   const first = new Date(year, month, 1, 12);
   const offset = (first.getDay() + 6) % 7;

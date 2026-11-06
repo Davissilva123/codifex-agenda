@@ -23,6 +23,7 @@ PWA de agenda pessoal em Next.js App Router, TypeScript e Tailwind CSS, usando S
 
 5. Execute o conteúdo completo de [`supabase/schema.sql`](./supabase/schema.sql). Ele cria as tabelas, índices, políticas RLS por usuário e o trabalho `pg_cron` que chama a Edge Function a cada minuto. O script requer que os dois segredos já estejam no Vault. No painel **Database → Extensions**, habilite `pg_cron` e `pg_net` se ainda não estiverem disponíveis no projeto/região.
    Se o aplicativo mostrar `Could not find the table 'public.observacoes' in the schema cache`, conecte-se ao projeto Supabase correto e execute [`supabase/fix-observacoes.sql`](./supabase/fix-observacoes.sql) no **SQL Editor**. O script cria a tabela com RLS, recarrega o cache do PostgREST e não altera as outras tabelas.
+   Para adicionar opções personalizadas e permitir renomear as opções padrão do campo “O que você vai fazer?” em um banco já configurado, execute [`supabase/migration-tipos-agendamento.sql`](./supabase/migration-tipos-agendamento.sql) no **SQL Editor**. Se executou uma versão anterior dessa migração, execute-a novamente para adicionar a configuração dos nomes padrão. Em instalações novas, o `schema.sql` já inclui essa estrutura.
 6. Configure secrets da Edge Function no Supabase (Dashboard → **Edge Functions → Secrets**) ou usando a CLI:
 
    ```powershell
@@ -125,21 +126,25 @@ O script `npm run desktop:dev` compila e abre a versão Electron no computador d
 
 ## Funcionalidades
 
-- Navegação principal simplificada em duas abas: **Agenda** e **Tarefas**. A Agenda abre no dia selecionado (hoje ao iniciar); a visão mensal, a visão anual e os contatos ficam dentro da própria aba Agenda.
-- Tarefas possuem prioridade, prazo, categoria/área e cliente/projeto associado, com filtros e contagens dinâmicas de abertas, concluídas e todas; a lista vazia informa quando não há tarefas no ano selecionado.
+- Navegação entre visões diária, semanal (sete dias), mensal e anual, além de tarefas, contatos e notas. A agenda abre no dia selecionado (hoje ao iniciar).
+- Tarefas possuem prioridade, prazo, categoria/área e cliente/projeto associado, com filtros por cliente, categoria e prioridade e contagens dinâmicas de abertas, concluídas e atrasadas.
+- Links de videoconferência conhecidos são identificados e exibidos como ação para entrar na reunião. O formulário avisa sobre conflito de horário para o mesmo responsável.
+- Importação e exportação de agenda no formato iCalendar (`.ics`), além de backup JSON completo.
 - Calendário anual de 12 meses e calendário mensal com navegação; destaque de hoje, feriados calculados, eventos, aniversários e anotações.
-- CRUD de compromissos e tarefas, conclusão, categorias/cores, validação de horário, recorrências diária/semanal/mensal/anual e lembretes.
+- CRUD de compromissos e tarefas, responsável em texto livre, conclusão automática após o horário final, indicação de tarefas atrasadas, categorias/cores, recorrências diária/semanal/mensal/anual e lembretes. O horário de término é opcional; quando informado, os blocos semanais ficam proporcionais à duração.
 - Formulários exibem datas como `dd/mm/aaaa` e horários no padrão brasileiro de 24 horas (`HH:mm`); tarefas podem ser excluídas pela própria lista.
 - Anotações diárias com gravação automática após uma breve pausa na digitação.
-- Agenda de contatos com telefones rotulados, busca, favoritos, filtro A–Z e importação/exportação CSV.
-- Busca global por compromissos, tarefas, contatos e observações; aceita datas brasileiras e não diferencia acentos. Backup de exportação JSON (botão de seta para baixo no cabeçalho), tema claro/escuro, atalhos (`Ctrl+N`, `Ctrl+F` e setas) e instalação como PWA.
+- Agenda de contatos com visualização em cards ou lista compacta, filtro A–Z com contagem, favoritos, importação/exportação CSV, telefone brasileiro validado e formatado, detecção/mesclagem de duplicados e lixeira com restauração e exclusão em massa.
+- Busca global por compromissos, tarefas, contatos e observações; aceita datas brasileiras e não diferencia acentos. Tema claro/escuro, atalhos (`N`, `T`, setas, `D`/`S`/`M`/`A`, `Ctrl+F` e `?`) e instalação como PWA.
+- Múltiplos lembretes por compromisso, com soneca, conclusão e estado persistidos. No Electron, os avisos autorizados também aparecem como notificações do sistema; atrasos ficam sinalizados na agenda.
+- Categorias pessoais com cores, filtros por categoria/status e estados vazios com ações para criar itens.
 - Notificações push por Edge Function e fallback local enquanto o app está aberto e autorizado. A ação **Adiar 5 min** abre a agenda e agenda novamente o lembrete.
 - Uso offline após o primeiro acesso autenticado neste dispositivo: os dados ficam em cache local, novas edições são guardadas na fila de sincronização e enviadas ao Supabase quando a conexão voltar.
 - Navegação por datas e anos arquivados sem exibir anos futuros não gerados. O botão **Gerar ano** fica disponível na visão anual e libera o próximo ano, um por vez, neste dispositivo; anos futuros só aparecem após serem gerados.
 
 O CSV exportado usa cabeçalhos `nome,telefones,email,empresa,endereco,aniversario,observacoes`. Datas de aniversário importadas devem estar em `AAAA-MM-DD`; telefones aceitam itens separados por ` | ` no formato `celular:+5511999999999`.
 
-A classificação de tarefas foi adicionada ao esquema por meio de `tipo`, `prioridade` e `cliente` em `agendamentos`. O SQL pode ser executado novamente em um banco já configurado para incluir essas colunas sem remover os registros existentes.
+A classificação, responsável e lixeira foram adicionados ao esquema de `agendamentos` e `contatos`. Para atualizar um projeto Supabase já existente, execute [`supabase/migration-responsavel-lixeira-contatos.sql`](./supabase/migration-responsavel-lixeira-contatos.sql) e depois [`supabase/migration-alertas-categorias.sql`](./supabase/migration-alertas-categorias.sql) no SQL Editor. A segunda migração cria `categorias`, preserva/backfilla categorias existentes e adiciona o estado dos lembretes. Instalações novas podem executar [`supabase/schema.sql`](./supabase/schema.sql) e também a migração de alertas/categorias para popular as categorias padrão.
 
 Para trabalhar sem conexão, faça o primeiro login e abra a agenda conectado para carregar os dados no dispositivo. Depois disso, a agenda instalada pode abrir, consultar e editar a cópia local sem internet. O login inicial, push, sincronização com outros dispositivos e envio/recebimento de dados do Supabase dependem de internet.
 

@@ -7,7 +7,7 @@ PARA ENVIAR MUDANÇAS NO FUTURO PARA GITHUB
 
 ABRA O CMD E ACESSE A PASTA E EXECUTE:
 git add .
-git commit -m "o que você mudou"
+git commit -m "Refatoração de design de sistema"
 git push
 
 

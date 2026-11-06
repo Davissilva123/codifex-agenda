@@ -11,17 +11,21 @@ create table if not exists public.agendamentos (
   hora_fim time,
   descricao text not null default '',
   local text not null default '',
-  categoria text not null default 'Trabalho',
-  cor text not null default '#6858d8',
+  categoria text not null default 'Normal',
+  cor text not null default '#3676c8',
+  categoria_id uuid,
   tipo text not null default 'compromisso' check (tipo in ('compromisso', 'tarefa')),
   prioridade text not null default 'normal' check (prioridade in ('baixa', 'normal', 'alta', 'urgente')),
   cliente text not null default '',
-  alerta_minutos integer check (alerta_minutos is null or alerta_minutos in (5, 10, 15, 30, 60, 1440)),
+  responsavel text not null default '',
+  alerta_minutos integer check (alerta_minutos is null or alerta_minutos in (0, 5, 10, 15, 30, 60, 120, 1440)),
+  alertas jsonb not null default '[]'::jsonb,
   recorrencia text not null default 'none' check (recorrencia in ('none', 'daily', 'weekly', 'monthly', 'yearly')),
   concluido boolean not null default false,
   alerta_enviado_em timestamptz,
   alerta_enviado_para date,
   adiado_ate timestamptz,
+  atrasado_notificado_em timestamptz,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now(),
   constraint agendamentos_horario_valido check (
@@ -29,13 +33,53 @@ create table if not exists public.agendamentos (
   )
 );
 
+create table if not exists public.categorias (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null default auth.uid() references auth.users(id) on delete cascade,
+  nome text not null check (length(trim(nome)) between 1 and 60),
+  cor text not null default '#6858d8' check (cor ~ '^#[0-9A-Fa-f]{6}$'),
+  created_at timestamptz not null default now(),
+  unique (user_id, nome),
+  unique (id, user_id)
+);
+
+create table if not exists public.tipos_agendamento (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null default auth.uid() references auth.users(id) on delete cascade,
+  nome text not null check (length(trim(nome)) between 1 and 60),
+  tipo_base text check (tipo_base is null or tipo_base in ('compromisso', 'medico', 'tarefa')),
+  created_at timestamptz not null default now(),
+  unique (user_id, nome)
+);
+
+alter table public.tipos_agendamento add column if not exists tipo_base text;
+alter table public.tipos_agendamento drop constraint if exists tipos_agendamento_tipo_base_check;
+alter table public.tipos_agendamento
+  add constraint tipos_agendamento_tipo_base_check
+  check (tipo_base is null or tipo_base in ('compromisso', 'medico', 'tarefa'));
+
+alter table public.agendamentos add column if not exists categoria_id uuid;
+alter table public.agendamentos add column if not exists tipo_personalizado text;
+alter table public.agendamentos add column if not exists alertas jsonb not null default '[]'::jsonb;
+alter table public.agendamentos add column if not exists atrasado_notificado_em timestamptz;
+alter table public.agendamentos drop constraint if exists agendamentos_categoria_id_user_id_fkey;
+alter table public.agendamentos
+  add constraint agendamentos_categoria_id_user_id_fkey
+  foreign key (categoria_id, user_id)
+  references public.categorias(id, user_id)
+  on delete set null (categoria_id);
+
 alter table public.agendamentos add column if not exists tipo text not null default 'compromisso';
 alter table public.agendamentos add column if not exists prioridade text not null default 'normal';
 alter table public.agendamentos add column if not exists cliente text not null default '';
+alter table public.agendamentos add column if not exists responsavel text not null default '';
 alter table public.agendamentos drop constraint if exists agendamentos_tipo_check;
 alter table public.agendamentos add constraint agendamentos_tipo_check check (tipo in ('compromisso', 'tarefa'));
 alter table public.agendamentos drop constraint if exists agendamentos_prioridade_check;
 alter table public.agendamentos add constraint agendamentos_prioridade_check check (prioridade in ('baixa', 'normal', 'alta', 'urgente'));
+alter table public.agendamentos drop constraint if exists agendamentos_alerta_minutos_check;
+alter table public.agendamentos add constraint agendamentos_alerta_minutos_check
+  check (alerta_minutos is null or alerta_minutos in (0, 5, 10, 15, 30, 60, 120, 1440));
 
 create table if not exists public.observacoes (
   id uuid primary key default gen_random_uuid(),
@@ -56,6 +100,7 @@ create table if not exists public.contatos (
   aniversario date,
   observacoes text not null default '',
   favorito boolean not null default false,
+  deleted_at timestamptz,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now(),
   unique (id, user_id)
@@ -91,6 +136,12 @@ create table if not exists public.aniversario_alertas_enviados (
 );
 
 create index if not exists agendamentos_user_data_idx on public.agendamentos(user_id, data);
+create index if not exists categorias_user_nome_idx on public.categorias(user_id, nome);
+create index if not exists tipos_agendamento_user_nome_idx on public.tipos_agendamento(user_id, nome);
+create unique index if not exists tipos_agendamento_user_tipo_base_idx
+  on public.tipos_agendamento(user_id, tipo_base)
+  where tipo_base is not null;
+create index if not exists agendamentos_categoria_idx on public.agendamentos(user_id, categoria_id);
 create index if not exists agendamentos_user_tarefas_idx on public.agendamentos(user_id, tipo, concluido, data);
 create index if not exists agendamentos_alertas_idx on public.agendamentos(data, alerta_minutos) where concluido = false and alerta_minutos is not null;
 create index if not exists observacoes_user_data_idx on public.observacoes(user_id, data);
@@ -99,6 +150,8 @@ create index if not exists telefones_user_contato_idx on public.telefones(user_i
 create index if not exists push_subscriptions_user_idx on public.push_subscriptions(user_id);
 
 alter table public.agendamentos enable row level security;
+alter table public.categorias enable row level security;
+alter table public.tipos_agendamento enable row level security;
 alter table public.observacoes enable row level security;
 alter table public.contatos enable row level security;
 alter table public.telefones enable row level security;
@@ -107,6 +160,12 @@ alter table public.aniversario_alertas_enviados enable row level security;
 
 drop policy if exists "Usuário gerencia seus agendamentos" on public.agendamentos;
 create policy "Usuário gerencia seus agendamentos" on public.agendamentos
+  for all to authenticated using (user_id = (select auth.uid())) with check (user_id = (select auth.uid()));
+drop policy if exists "Usuário gerencia suas categorias" on public.categorias;
+create policy "Usuário gerencia suas categorias" on public.categorias
+  for all to authenticated using (user_id = (select auth.uid())) with check (user_id = (select auth.uid()));
+drop policy if exists "Usuário gerencia seus tipos de agendamento" on public.tipos_agendamento;
+create policy "Usuário gerencia seus tipos de agendamento" on public.tipos_agendamento
   for all to authenticated using (user_id = (select auth.uid())) with check (user_id = (select auth.uid()));
 drop policy if exists "Usuário gerencia suas observações" on public.observacoes;
 create policy "Usuário gerencia suas observações" on public.observacoes
