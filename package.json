@@ -12,7 +12,9 @@
     "desktop:package": "node scripts/build-desktop.mjs && node scripts/prepare-desktop.mjs && electron-builder --win dir"
   },
   "dependencies": {
+    "@supabase/ssr": "^0.12.7",
     "@supabase/supabase-js": "^2.49.1",
+    "fflate": "^0.8.3",
     "next": "^15.2.0",
     "react": "^19.0.0",
     "react-dom": "^19.0.0"
@@ -33,11 +35,20 @@
     "directories": {
       "output": "release/desktop"
     },
+    "protocols": [
+      {
+        "name": "CODIFEX AGENDAS",
+        "schemes": [
+          "codifex-agendas"
+        ]
+      }
+    ],
     "files": [
       "desktop/main.cjs",
       "package.json",
       "public/icon.png",
-      "public/icon.ico"
+      "public/icon.ico",
+      "server.env"
     ],
     "extraResources": [
       {

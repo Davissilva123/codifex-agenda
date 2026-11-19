@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Conta Confirmada - CODIFEX AGENDAS</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    }
+    body {
+      background-color: #0b0f19;
+      color: #f1f5f9;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+    .card {
+      background-color: #131b2e;
+      border: 1px solid #1e293b;
+      border-radius: 20px;
+      padding: 36px 28px;
+      width: 100%;
+      max-width: 440px;
+      text-align: center;
+      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+      animation: fadeIn 0.4s ease-out;
+    }
+    .icon-wrapper {
+      width: 80px;
+      height: 80px;
+      margin: 0 auto 24px;
+      border-radius: 20px;
+      background: linear-gradient(135deg, #2563eb, #6366f1);
+      padding: 2px;
+      box-shadow: 0 10px 25px -5px rgba(37, 99, 235, 0.4);
+    }
+    .icon-inner {
+      width: 100%;
+      height: 100%;
+      background-color: #0b0f19;
+      border-radius: 18px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .checkmark {
+      width: 42px;
+      height: 42px;
+      stroke: #10b981;
+      stroke-width: 2.5;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+      fill: none;
+    }
+    h1 {
+      font-size: 24px;
+      font-weight: 700;
+      color: #ffffff;
+      margin-bottom: 12px;
+      letter-spacing: -0.5px;
+    }
+    p {
+      color: #94a3b8;
+      font-size: 14px;
+      line-height: 1.6;
+      margin-bottom: 28px;
+    }
+    .btn-open {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      width: 100%;
+      padding: 15px 20px;
+      background-color: #2563eb;
+      color: #ffffff;
+      font-size: 16px;
+      font-weight: 600;
+      text-decoration: none;
+      border-radius: 12px;
+      border: none;
+      cursor: pointer;
+      box-shadow: 0 10px 20px -5px rgba(37, 99, 235, 0.4);
+      transition: all 0.2s ease;
+    }
+    .btn-open:hover {
+      background-color: #1d4ed8;
+      transform: translateY(-1px);
+    }
+    .btn-open:active {
+      transform: translateY(1px);
+    }
+    .btn-icon {
+      width: 20px;
+      height: 20px;
+      stroke: currentColor;
+      stroke-width: 2;
+      fill: none;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+    .hint {
+      margin-top: 14px;
+      font-size: 12px;
+      color: #64748b;
+      line-height: 1.5;
+    }
+    .footer {
+      margin-top: 28px;
+      padding-top: 20px;
+      border-top: 1px solid #1e293b;
+      font-size: 12px;
+      color: #475569;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(8px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <div class="icon-wrapper">
+      <div class="icon-inner">
+        <svg class="checkmark" viewBox="0 0 24 24">
+          <path d="M5 13l4 4L19 7"></path>
+        </svg>
+      </div>
+    </div>
+
+    <h1>Conta confirmada com sucesso!</h1>
+    <p>Obrigado por confirmar o seu cadastro no <strong>CODIFEX AGENDAS</strong>. Seu acesso foi liberado com sucesso e você já pode utilizar o sistema.</p>
+
+    <a href="codifex-agendas://" class="btn-open" id="openAppBtn" onclick="tryOpenApp(event)">
+      <svg class="btn-icon" viewBox="0 0 24 24">
+        <path d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path>
+      </svg>
+      <span>Abrir CODIFEX AGENDAS</span>
+    </a>
+
+    <div class="hint" id="hintText">
+      Clique no botão acima para abrir o programa no seu computador. Se você estiver no celular, acesse seu computador para entrar na conta.
+    </div>
+
+    <div class="footer">
+      <span>CODIFEX SISTEMAS</span>
+      <span>•</span>
+      <span>Avisnet</span>
+    </div>
+  </div>
+
+  <script>
+    function tryOpenApp(e) {
+      // Dispara o protocolo codifex-agendas://
+      window.location.href = "codifex-agendas://";
+      document.getElementById("hintText").innerHTML = "Se o programa já abriu no computador, você pode fechar esta janela.<br>Caso contrário, abra o <strong>CODIFEX AGENDAS</strong> pelo atalho na Área de Trabalho.";
+    }
+
+    // Se o usuário estiver no computador (não mobile), tenta abrir automaticamente após 1 segundo
+    window.addEventListener("DOMContentLoaded", function() {
+      const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+      if (!isMobile) {
+        setTimeout(function() {
+          try {
+            window.location.href = "codifex-agendas://";
+          } catch (_) {}
+        }, 1200);
+      }
+    });
+  </script>
+</body>
+</html>

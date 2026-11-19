@@ -24,43 +24,29 @@
   --radius:    .9rem;
 }
 
-.dark {
-  color-scheme: dark;
-  --bg:      #0f172a;
-  --surface: #1e293b;
-  --text:    #f1f5f9;
-  --muted:   #94a3b8;
-  --border:  #334155;
-  --track:   #111c2f;
-  --primary: #60a5fa;
-  --primary-soft: #172f50;
-  --hover:   #26364d;
-  --page: var(--bg);
-  --line: var(--border);
-  --accent: var(--primary);
-
-  --accent-light: color-mix(in srgb, var(--accent) 14%, transparent);
-  --shadow-sm: 0 1px 3px rgba(0,0,0,.25);
-  --shadow-md: 0 4px 12px rgba(0,0,0,.35);
-}
-
+.dark,
 [data-theme="dark"] {
   color-scheme: dark;
-  --bg: #0f172a;
-  --surface: #1e293b;
-  --text: #f1f5f9;
-  --muted: #94a3b8;
-  --border: #334155;
-  --track: #111c2f;
-  --primary: #60a5fa;
-  --primary-soft: #172f50;
-  --hover: #26364d;
-  --page: var(--bg);
-  --line: var(--border);
-  --accent: var(--primary);
+  --bg:           #000000;
+  --surface:      #0a0a0a;
+  --text:         #e5e5e5;
+  --muted:        #8a8a8a;
+  --border:       #1f1f1f;
+  --track:        #000000;
+  --primary:      #63a2ff;
+  --primary-soft: #111c2e;
+  --hover:        #141414;
+  --page:         var(--bg);
+  --line:         var(--border);
+  --accent:       var(--primary);
+
+  --accent-light: #111c2e;
+  --shadow-sm:    none;
+  --shadow-md:    none;
 }
 
-[data-theme="light"] {
+[data-theme="light"],
+.light {
   color-scheme: light;
   --bg: #f4f6fb;
   --surface: #ffffff;
@@ -76,21 +62,46 @@
   --accent: var(--primary);
 }
 
+.black,
+[data-theme="black"] {
+  color-scheme: dark;
+  --bg:           #000000;
+  --surface:      #0a0a0a;
+  --text:         #e5e5e5;
+  --muted:        #8a8a8a;
+  --border:       #1f1f1f;
+  --track:        #000000;
+  --primary:      #63a2ff;
+  --primary-soft: #111c2e;
+  --hover:        #141414;
+  --page:         var(--bg);
+  --line:         var(--border);
+  --accent:       var(--primary);
+
+  --accent-light: #111c2e;
+  --shadow-sm:    none;
+  --shadow-md:    none;
+}
+
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]):not(.light):not(.dark) {
     color-scheme: dark;
-    --bg: #0f172a;
-    --surface: #1e293b;
-    --text: #f1f5f9;
-    --muted: #94a3b8;
-    --border: #334155;
-    --track: #111c2f;
-    --primary: #60a5fa;
-    --primary-soft: #172f50;
-    --hover: #26364d;
-    --page: var(--bg);
-    --line: var(--border);
-    --accent: var(--primary);
+    --bg:           #000000;
+    --surface:      #0a0a0a;
+    --text:         #e5e5e5;
+    --muted:        #8a8a8a;
+    --border:       #1f1f1f;
+    --track:        #000000;
+    --primary:      #63a2ff;
+    --primary-soft: #111c2e;
+    --hover:        #141414;
+    --page:         var(--bg);
+    --line:         var(--border);
+    --accent:       var(--primary);
+
+    --accent-light: #111c2e;
+    --shadow-sm:    none;
+    --shadow-md:    none;
   }
 }
 
@@ -575,9 +586,58 @@ button { cursor: pointer; }
 .task-upcoming-card { position: sticky; top: 1rem; display: grid; grid-template-columns: 40px minmax(0, 1fr); align-items: start; gap: .75rem; border: 1px solid var(--border); border-radius: 14px; padding: 1rem; background: color-mix(in srgb, var(--primary) 5%, var(--surface)); }
 .task-upcoming-icon { display: flex; width: 40px; height: 40px; align-items: center; justify-content: center; border-radius: 12px; background: var(--primary-soft); color: var(--primary); }
 .task-upcoming-icon svg { width: 21px; height: 21px; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
-.task-upcoming-complete { display: inline-flex; width: 44px; height: 44px; grid-column: 2; align-items: center; justify-content: center; justify-self: start; border: 1px solid var(--border); border-radius: 12px; background: var(--surface); color: var(--primary); }
-.task-upcoming-complete:hover { border-color: var(--primary); background: var(--primary-soft); }
-.task-upcoming-complete svg { width: 19px; height: 19px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.task-upcoming-complete-btn {
+  grid-column: 1 / -1;
+  display: inline-flex;
+  width: 100%;
+  height: 40px;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+  padding: 0 1rem;
+  border: 1px solid rgba(16, 185, 129, 0.35);
+  border-radius: 10px;
+  background: rgba(16, 185, 129, 0.08);
+  color: #059669;
+  font-size: 0.84rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.dark .task-upcoming-complete-btn,
+.black .task-upcoming-complete-btn {
+  background: rgba(16, 185, 129, 0.12);
+  border-color: rgba(16, 185, 129, 0.3);
+  color: #34d399;
+}
+.task-upcoming-complete-btn:hover {
+  background: #10b981 !important;
+  border-color: #10b981 !important;
+  color: #ffffff !important;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.25);
+}
+.task-upcoming-complete-btn:active {
+  transform: translateY(0);
+}
+.task-upcoming-complete-btn:focus-visible {
+  outline: 2px solid #10b981;
+  outline-offset: 2px;
+}
+.task-upcoming-complete-btn svg {
+  width: 17px;
+  height: 17px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2.2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  transition: transform 0.2s ease;
+}
+.task-upcoming-complete-btn:hover svg {
+  transform: scale(1.15);
+}
 .work-item-task { padding: .9rem; }
 .work-item-task-checkbox { appearance: none; width: 22px; height: 22px; flex: 0 0 auto; border: 1.5px solid var(--border); border-radius: 7px; background: var(--surface); transition: background .15s, border-color .15s; }
 .work-item-task-checkbox:checked { border-color: var(--primary); background: var(--primary); }
@@ -1124,3 +1184,297 @@ button { cursor: pointer; }
   .day-toolbar-date { min-width: 8rem; }
   .day-today-button { padding-inline: .5rem; }
 }
+
+/* ─── Regras de Estilo do Tema Preto (AMOLED Pure Black) ─────────── */
+:is(.dark, .black) {
+  scrollbar-color: #1f1f1f #000000;
+}
+:is(.dark, .black) ::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+  background-color: #000000;
+}
+:is(.dark, .black) ::-webkit-scrollbar-track {
+  background-color: #000000;
+}
+:is(.dark, .black) ::-webkit-scrollbar-thumb {
+  background-color: #1f1f1f;
+  border-radius: 4px;
+  border: 2px solid #000000;
+}
+:is(.dark, .black) ::-webkit-scrollbar-thumb:hover {
+  background-color: #2b2b2b;
+}
+
+:is(.dark, .black) ::selection {
+  background-color: color-mix(in srgb, #63a2ff 35%, transparent) !important;
+  color: #ffffff !important;
+}
+
+/* Títulos brancos */
+:is(.dark, .black) h1,
+:is(.dark, .black) h2,
+:is(.dark, .black) h3,
+:is(.dark, .black) h4,
+:is(.dark, .black) h5,
+:is(.dark, .black) h6,
+:is(.dark, .black) strong,
+:is(.dark, .black) .agenda-heading-title,
+:is(.dark, .black) .contact-form-section-title,
+:is(.dark, .black) .note-form-section-title,
+:is(.dark, .black) .calendar-month-title {
+  color: #ffffff;
+}
+
+/* Campos de entrada, selects e textareas */
+:is(.dark, .black) .field,
+:is(.dark, .black) input:not([type="checkbox"]):not([type="radio"]):not([type="submit"]):not([type="button"]),
+:is(.dark, .black) textarea,
+:is(.dark, .black) select,
+:is(.dark, .black) .day-note-input {
+  background-color: #000000 !important;
+  border-color: #222222 !important;
+  color: #e5e5e5 !important;
+}
+
+:is(.dark, .black) .field::placeholder,
+:is(.dark, .black) input::placeholder,
+:is(.dark, .black) textarea::placeholder {
+  color: #737373 !important;
+  opacity: 1;
+}
+
+:is(.dark, .black) .field:focus,
+:is(.dark, .black) input:focus,
+:is(.dark, .black) textarea:focus,
+:is(.dark, .black) select:focus,
+:is(.dark, .black) .day-note-input:focus {
+  border-color: #63a2ff !important;
+  box-shadow: 0 0 0 2px #1e3a66 !important;
+}
+
+:is(.dark, .black) input[type="date"]::-webkit-calendar-picker-indicator {
+  filter: invert(0.85);
+  cursor: pointer;
+}
+
+/* Cartões, superfícies, modais e menus */
+:is(.dark, .black) .card,
+:is(.dark, .black) .surface,
+:is(.dark, .black) .agenda-data-dropdown,
+:is(.dark, .black) .agenda-filter-popover,
+:is(.dark, .black) .task-filters-popover,
+:is(.dark, .black) .notes-filters-popover,
+:is(.dark, .black) .contact-filters-popover,
+:is(.dark, .black) .contact-actions-dropdown,
+:is(.dark, .black) .appointment-category-options,
+:is(.dark, .black) .agenda-reminder-toast,
+:is(.dark, .black) .agenda-snooze-menu,
+:is(.dark, .black) .week-filter-popover,
+:is(.dark, .black) .year-filter-popover,
+:is(.dark, .black) .task-view,
+:is(.dark, .black) .task-upcoming-card,
+:is(.dark, .black) .calendar-year-month {
+  background-color: #0a0a0a !important;
+  border-color: #1f1f1f !important;
+  box-shadow: none !important;
+}
+
+/* Itens dentro dos cartões e compromissos */
+:is(.dark, .black) .work-item,
+:is(.dark, .black) .work-item-task,
+:is(.dark, .black) .work-item-day,
+:is(.dark, .black) .work-item-month,
+:is(.dark, .black) .calendar-year-layout .month-day-agenda .work-item-month {
+  background-color: #000000 !important;
+  border-color: #1f1f1f !important;
+  box-shadow: none !important;
+}
+
+:is(.dark, .black) .work-item-task-checkbox,
+:is(.dark, .black) .work-item-month-checkbox {
+  background-color: #000000 !important;
+  border-color: #222222 !important;
+}
+:is(.dark, .black) .work-item-task-checkbox:checked,
+:is(.dark, .black) .work-item-month-checkbox:checked {
+  background-color: #63a2ff !important;
+  border-color: #63a2ff !important;
+}
+
+/* Status Concluído */
+:is(.dark, .black) .work-item-state.is-complete,
+:is(.dark, .black) .work-item-day .work-item-state.is-complete,
+:is(.dark, .black) .work-item-month .work-item-state.is-complete {
+  background-color: #0b2a1d !important;
+  color: #4ade80 !important;
+  border: 1px solid #164e33 !important;
+}
+
+/* Status Atrasado / Urgente */
+:is(.dark, .black) .work-item-state.is-overdue,
+:is(.dark, .black) .work-item-day .work-item-state.is-overdue,
+:is(.dark, .black) .work-item-month .work-item-state.is-overdue,
+:is(.dark, .black) .work-item-task-urgent,
+:is(.dark, .black) .agenda-overdue-count {
+  background-color: #2d0a0a !important;
+  color: #fca5a5 !important;
+  border-color: #7f1d1d !important;
+}
+
+/* Abas ativas e data atual */
+:is(.dark, .black) .agenda-view-indicator {
+  background-color: #111c2e !important;
+  border: 1px solid #1e3a66 !important;
+  box-shadow: none !important;
+}
+:is(.dark, .black) .agenda-view-tab[aria-selected="true"] {
+  color: #63a2ff !important;
+}
+:is(.dark, .black) .agenda-module-tab[aria-current="true"],
+:is(.dark, .black) .agenda-module-tab.ativa {
+  background-color: #111c2e !important;
+  border: 1px solid #1e3a66 !important;
+  color: #63a2ff !important;
+  box-shadow: none !important;
+}
+:is(.dark, .black) .day-toolbar-date {
+  background-color: #111c2e !important;
+  border: 1px solid #1e3a66 !important;
+  color: #63a2ff !important;
+}
+:is(.dark, .black) .calendar-day.is-today .calendar-day-number {
+  background-color: #111c2e !important;
+  border: 1px solid #1e3a66 !important;
+  color: #63a2ff !important;
+}
+:is(.dark, .black) .calendar-day.is-selected .calendar-day-number {
+  border-color: #63a2ff !important;
+  background-color: #111c2e !important;
+  color: #63a2ff !important;
+}
+:is(.dark, .black) .task-summary-card[aria-pressed="true"],
+:is(.dark, .black) .task-status-options button[aria-pressed="true"],
+:is(.dark, .black) .agenda-status-segment button[aria-pressed="true"] {
+  background-color: #111c2e !important;
+  border: 1px solid #1e3a66 !important;
+  color: #63a2ff !important;
+}
+
+/* Botões de navegação, ícones e ações */
+:is(.dark, .black) .agenda-icon-button,
+:is(.dark, .black) .day-nav-button,
+:is(.dark, .black) .day-today-button,
+:is(.dark, .black) .contact-secondary-action,
+:is(.dark, .black) .task-year-picker {
+  background-color: #0a0a0a !important;
+  border-color: #1f1f1f !important;
+  color: #e5e5e5 !important;
+}
+:is(.dark, .black) .agenda-icon-button:hover,
+:is(.dark, .black) .day-nav-button:hover:not(:disabled),
+:is(.dark, .black) .day-today-button:hover:not(:disabled),
+:is(.dark, .black) .contact-secondary-action:hover {
+  background-color: #141414 !important;
+  border-color: #1e3a66 !important;
+  color: #63a2ff !important;
+}
+
+/* Divisores e bordas finas */
+:is(.dark, .black) .agenda-action-divider,
+:is(.dark, .black) .agenda-data-divider,
+:is(.dark, .black) .contact-actions-divider,
+:is(.dark, .black) .contact-selection-bar {
+  background-color: #1f1f1f !important;
+  border-color: #1f1f1f !important;
+}
+
+/* Ícones de dados */
+:is(.dark, .black) .agenda-data-icon-blue { background-color: #111c2e !important; color: #63a2ff !important; }
+:is(.dark, .black) .agenda-data-icon-green { background-color: #0b2a1d !important; color: #4ade80 !important; }
+:is(.dark, .black) .agenda-data-icon-amber { background-color: #2e1b05 !important; color: #fde68a !important; }
+:is(.dark, .black) .agenda-data-icon-red { background-color: #2d0a0a !important; color: #fca5a5 !important; }
+
+/* Contatos */
+:is(.dark, .black) .contact-row {
+  border-bottom: 1px solid #1f1f1f !important;
+}
+:is(.dark, .black) .contact-row:hover {
+  background-color: #0e0e0e !important;
+}
+:is(.dark, .black) .contact-avatar {
+  background-color: #111c2e !important;
+  border-color: #1e3a66 !important;
+  color: #63a2ff !important;
+}
+
+/* Calendário */
+:is(.dark, .black) .month-legend,
+:is(.dark, .black) .year-navigation {
+  background-color: #000000 !important;
+  border-color: #1f1f1f !important;
+}
+:is(.dark, .black) .month-special-day {
+  border-color: #1f1f1f !important;
+}
+:is(.dark, .black) .month-holiday {
+  background-color: #2d0a0a !important;
+  border-color: #7f1d1d !important;
+  color: #fca5a5 !important;
+}
+:is(.dark, .black) .month-birthday {
+  background-color: #2a0a1a !important;
+  border-color: #831843 !important;
+  color: #f9a8d4 !important;
+}
+:is(.dark, .black) .week-completed-event {
+  background-color: #0b2a1d !important;
+  border-color: #164e33 !important;
+}
+:is(.dark, .black) .week-completed-title {
+  color: #4ade80 !important;
+}
+
+/* Modais e Formulários */
+:is(.dark, .black) .contact-form-modal.is-new .contact-form-footer,
+:is(.dark, .black) .contact-form-modal.is-edit .contact-form-footer,
+:is(.dark, .black) .note-form-footer {
+  background-color: #0a0a0a !important;
+  border-color: #1f1f1f !important;
+}
+:is(.dark, .black) .contact-form-modal.is-new .contact-form-phone-section,
+:is(.dark, .black) .contact-form-modal.is-edit .contact-form-phone-section {
+  background-color: #000000 !important;
+  border-color: #1f1f1f !important;
+}
+
+/* Tela de Login */
+:is(.dark, .black).auth-page,
+:is(.dark, .black) .auth-page {
+  background: #000000 !important;
+}
+:is(.dark, .black) .auth-card {
+  background-color: #0a0a0a !important;
+  border: 1px solid #1f1f1f !important;
+  box-shadow: none !important;
+}
+:is(.dark, .black) .auth-calendar-shape {
+  border-color: #1f1f1f !important;
+  background: #0a0a0a !important;
+  box-shadow: none !important;
+}
+
+/* SuperAdminModal e Tabelas */
+:is(.dark, .black) table thead th {
+  background-color: #000000 !important;
+  border-color: #1f1f1f !important;
+  color: #8a8a8a !important;
+}
+:is(.dark, .black) table tbody td,
+:is(.dark, .black) table tbody tr {
+  border-color: #1f1f1f !important;
+}
+:is(.dark, .black) table tbody tr:hover {
+  background-color: #0e0e0e !important;
+}
+

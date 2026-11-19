@@ -5,7 +5,7 @@ type Mutation = {
   id: string;
   table: OfflineTable;
   operation: "insert" | "update" | "delete" | "upsert";
-  record?: Record<string, unknown>;
+  record?: Record<string, unknown> | Record<string, unknown>[];
   filters?: Record<string, string>;
 };
 
@@ -20,7 +20,45 @@ export interface LocalAgendaData {
 }
 
 const emptyData = (): LocalAgendaData => ({ agendamentos: [], contatos: [], telefones: [], observacoes: [], notas: [], categorias: [], tipos_agendamento: [] });
-const key = (userId: string, suffix: string) => `minha-agenda:${userId}:${suffix}`;
+const key = (userId: string, suffix: string, empresaId?: string) =>
+  `minha-agenda:${userId}:${empresaId || "legado"}:${suffix}`;
+const legacyKey = (userId: string, suffix: string) => `minha-agenda:${userId}:${suffix}`;
+
+function migrateLegacyKey(userId: string, suffix: string, empresaId?: string): string {
+  const scopedKey = key(userId, suffix, empresaId);
+  if (!empresaId || localStorage.getItem(scopedKey) !== null) return scopedKey;
+  const legacy = localStorage.getItem(legacyKey(userId, suffix));
+  if (legacy !== null) {
+    localStorage.setItem(scopedKey, legacy);
+    localStorage.removeItem(legacyKey(userId, suffix));
+  }
+  return scopedKey;
+}
+
+function migrateLegacyPendingKey(userId: string, empresaId?: string): string {
+  const scopedKey = key(userId, "pending", empresaId);
+  if (!empresaId || localStorage.getItem(scopedKey) !== null) return scopedKey;
+
+  const legacy = localStorage.getItem(legacyKey(userId, "pending"));
+  if (legacy === null) return scopedKey;
+  try {
+    const pending = JSON.parse(legacy) as Mutation[];
+    const migrated = pending.map((mutation) => {
+      const record = Array.isArray(mutation.record)
+        ? mutation.record.map((row) => ({ ...row, empresa_id: empresaId }))
+        : mutation.record ? { ...mutation.record, empresa_id: empresaId } : undefined;
+      const filters = mutation.operation === "update" || mutation.operation === "delete"
+        ? { ...(mutation.filters || {}), empresa_id: empresaId }
+        : mutation.filters;
+      return { ...mutation, record, filters };
+    });
+    localStorage.setItem(scopedKey, JSON.stringify(migrated));
+    localStorage.removeItem(legacyKey(userId, "pending"));
+  } catch (error) {
+    console.error("Não foi possível migrar as alterações offline para a empresa ativa.", error);
+  }
+  return scopedKey;
+}
 
 function readJson<T>(storageKey: string, fallback: T): T {
   try {
@@ -32,33 +70,34 @@ function readJson<T>(storageKey: string, fallback: T): T {
   }
 }
 
-export function readLocalAgenda(userId: string): LocalAgendaData {
-  const data = readJson(key(userId, "data"), emptyData());
+export function readLocalAgenda(userId: string, empresaId?: string): LocalAgendaData {
+  const data = readJson(migrateLegacyKey(userId, "data", empresaId), emptyData());
   if (!data.notas) data.notas = [];
   if (!data.categorias) data.categorias = [];
   if (!data.tipos_agendamento) data.tipos_agendamento = [];
   return data;
 }
 
-export function saveLocalAgenda(userId: string, data: LocalAgendaData): void {
+export function saveLocalAgenda(userId: string, data: LocalAgendaData, empresaId?: string): void {
   if (!data.notas) data.notas = [];
   if (!data.categorias) data.categorias = [];
   if (!data.tipos_agendamento) data.tipos_agendamento = [];
-  localStorage.setItem(key(userId, "data"), JSON.stringify(data));
+  localStorage.setItem(key(userId, "data", empresaId), JSON.stringify(data));
 }
 
-export function readPendingCount(userId: string): number {
-  return readJson<Mutation[]>(key(userId, "pending"), []).length;
+export function readPendingCount(userId: string, empresaId?: string): number {
+  return readJson<Mutation[]>(migrateLegacyPendingKey(userId, empresaId), []).length;
 }
 
-export function queueOfflineMutation(userId: string, mutation: Omit<Mutation, "id">): void {
-  const pending = readJson<Mutation[]>(key(userId, "pending"), []);
+export function queueOfflineMutation(userId: string, mutation: Omit<Mutation, "id">, empresaId?: string): void {
+  const storageKey = migrateLegacyPendingKey(userId, empresaId);
+  const pending = readJson<Mutation[]>(storageKey, []);
   pending.push({ ...mutation, id: crypto.randomUUID() });
-  localStorage.setItem(key(userId, "pending"), JSON.stringify(pending));
+  localStorage.setItem(storageKey, JSON.stringify(pending));
 }
 
-export async function syncOfflineMutations(userId: string, supabase: SupabaseClient): Promise<number> {
-  const storageKey = key(userId, "pending");
+export async function syncOfflineMutations(userId: string, supabase: SupabaseClient, empresaId?: string): Promise<number> {
+  const storageKey = migrateLegacyPendingKey(userId, empresaId);
   const pending = readJson<Mutation[]>(storageKey, []);
   let synced = 0;
   for (const mutation of pending) {
@@ -70,7 +109,10 @@ export async function syncOfflineMutations(userId: string, supabase: SupabaseCli
         for (const [column, value] of filters) query = query.eq(column, value);
         errorMessage = (await query).error?.message || null;
       } else if (mutation.operation === "upsert") {
-        let query = supabase.from(mutation.table).upsert(mutation.record || {}, { onConflict: mutation.table === "observacoes" ? "user_id,data" : "id" });
+        const onConflict = mutation.table === "observacoes"
+          ? "empresa_id,user_id,data"
+          : mutation.table === "categorias" ? "empresa_id,user_id,nome" : "id";
+        let query = supabase.from(mutation.table).upsert(mutation.record || {}, { onConflict });
         for (const [column, value] of filters) query = query.eq(column, value);
         errorMessage = (await query).error?.message || null;
       } else if (mutation.operation === "update") {

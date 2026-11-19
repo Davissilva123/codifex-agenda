@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import type { Appointment, Priority } from "@/lib/types";
 import { formatDate } from "@/lib/dates";
 import { extractMeetingUrl } from "@/lib/meeting";
@@ -62,9 +62,25 @@ export function WorkItem({
 }: WorkItemProps) {
   const now = useClock();
   const [showFullDesc, setShowFullDesc] = useState(false);
+  const [descriptionIsTruncated, setDescriptionIsTruncated] = useState(false);
+  const descriptionRef = useRef<HTMLParagraphElement>(null);
   const overdue = isAppointmentOverdue(item, now);
   const isMedical = item.tipo === "compromisso" && item.categoria === "Saúde";
   const canEditOrDelete = !item.concluido || (!dayMode && !monthMode);
+
+  useEffect(() => {
+    const element = descriptionRef.current;
+    if (!element || showFullDesc) return;
+
+    const updateTruncation = () => {
+      setDescriptionIsTruncated(element.scrollHeight > element.clientHeight + 1);
+    };
+    updateTruncation();
+
+    const observer = new ResizeObserver(updateTruncation);
+    observer.observe(element);
+    return () => observer.disconnect();
+  }, [item.descricao, showFullDesc]);
 
   const meetingUrl = useMemo(() => {
     if (item.tipo === "compromisso" && item.categoria === "Saúde") return null;
@@ -170,10 +186,13 @@ export function WorkItem({
 
           {item.descricao && (
             <div className={`work-item-description mt-2 text-xs sm:text-sm`}>
-              <p className={`${showFullDesc ? "whitespace-pre-wrap" : "line-clamp-3 whitespace-pre-wrap"}`}>
+              <p
+                ref={descriptionRef}
+                className={`${showFullDesc ? "whitespace-pre-wrap" : "line-clamp-3 whitespace-pre-wrap"}`}
+              >
                 {item.descricao}
               </p>
-              {item.descricao.length > 180 && (
+              {(showFullDesc || descriptionIsTruncated) && (
                 <button
                   type="button"
                   onClick={() => setShowFullDesc(!showFullDesc)}

@@ -313,8 +313,8 @@ export function ContactsView({
           <h2 className="text-xl sm:text-2xl font-bold">{showTrash ? "Lixeira" : "Agenda telefônica"}</h2>
           <p className="muted text-sm">
             {showTrash
-              ? `${trashedContacts.length} contato(s) na lixeira`
-              : `${contacts.length} contato(s) cadastrado(s)`}
+              ? `${trashedContacts.length} ${trashedContacts.length === 1 ? "contato na lixeira" : "contatos na lixeira"}`
+              : `${contacts.length} ${contacts.length === 1 ? "contato cadastrado" : "contatos cadastrados"}`}
           </p>
         </div>
         <div className="contact-header-actions flex flex-wrap items-center gap-2">
@@ -386,7 +386,12 @@ export function ContactsView({
 
       {showTrashNotice && !!lastTrashedContactIds.length && (
         <div className="mb-4 flex flex-wrap items-center justify-between gap-2 rounded-xl border border-amber-300 bg-amber-50 p-3 text-sm dark:border-amber-900 dark:bg-amber-950/30">
-          <span>{lastTrashedContactIds.length} contato(s) movido(s) para a lixeira.</span>
+          <span>
+            {lastTrashedContactIds.length}{" "}
+            {lastTrashedContactIds.length === 1
+              ? "contato movido para a lixeira."
+              : "contatos movidos para a lixeira."}
+          </span>
           <button type="button" className="btn btn-ghost text-violet-700 dark:text-violet-300" onClick={() => {
             setShowTrashNotice(false);
             onUndoTrash();
@@ -485,7 +490,7 @@ export function ContactsView({
                         <button
                           key={letter}
                           type="button"
-                          aria-label={`${letter}: ${letterCounts.get(letter) || 0} contato(s)`}
+                          aria-label={`${letter}: ${letterCounts.get(letter) || 0} ${(letterCounts.get(letter) || 0) === 1 ? "contato" : "contatos"}`}
                           aria-pressed={contactLetter === letter}
                           className={contactLetter === letter ? "selected" : ""}
                           onClick={() => {
@@ -516,7 +521,9 @@ export function ContactsView({
                 <input type="checkbox" checked={allVisibleSelected} onChange={toggleVisibleSelection} />
                 Selecionar todos os contatos
               </label>
-              <span className="muted text-xs">{selectedIds.size} selecionado(s)</span>
+              <span className="muted text-xs">
+                {selectedIds.size} {selectedIds.size === 1 ? "selecionado" : "selecionados"}
+              </span>
               {selectedIds.size > 0 && (
                 <button
                   type="button"

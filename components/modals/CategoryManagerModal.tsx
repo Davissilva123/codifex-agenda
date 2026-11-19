@@ -164,7 +164,7 @@ export function CategoryManagerModal({
             <p className="text-sm font-semibold">Excluir “{categoryBeingDeleted?.nome}”?</p>
             {requiresReplacement ? (
               <label className="mt-2 block text-sm">
-                Mover {usageCount[deleteId!]} compromisso(s) para
+                Mover {usageCount[deleteId!]} {usageCount[deleteId!] === 1 ? "compromisso" : "compromissos"} para
                 <select className="field mt-1" value={moveToId} onChange={(event) => setMoveToId(event.target.value)} required>
                   {categories.filter((category) => category.id !== deleteId).map((category) => (
                     <option key={category.id} value={category.id}>{category.nome}</option>

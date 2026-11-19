@@ -1,0 +1,12 @@
+{
+  "crons": [
+    {
+      "path": "/api/cron/company-backups",
+      "schedule": "0 6 * * *"
+    },
+    {
+      "path": "/api/cron/check-expired-companies",
+      "schedule": "0 3 * * *"
+    }
+  ]
+}

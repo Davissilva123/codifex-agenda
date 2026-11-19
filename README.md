@@ -78,19 +78,77 @@ Inicie e abra `http://localhost:3000`:
 npm run dev
 ```
 
-O service worker e as notificações precisam de HTTPS fora de `localhost`. Cadastre-se na tela inicial ou entre com uma conta criada no Supabase.
+O service worker e as notificações precisam de HTTPS fora de `localhost`. Entre com uma conta criada ou convidada no Supabase. Depois da migração multiempresa, o cadastro público fica desativado: um super admin deve convidar e vincular cada usuário a uma empresa.
 
 Se a verificação de sessão não responder em 12 segundos, a tela informa o problema e oferece **Tentar conectar novamente**, em vez de permanecer carregando indefinidamente. Confirme as variáveis públicas do Supabase e a conexão antes de tentar novamente.
 
 ## 4. Publicar na Vercel
 
 1. Envie este projeto para um repositório Git e importe-o no painel da Vercel, ou use a Vercel CLI.
-2. Configure as mesmas três variáveis públicas usadas em `.env.local` em **Project → Settings → Environment Variables**. A chave `service_role`, `CRON_SECRET` e a chave privada VAPID não devem ser configuradas na Vercel.
+2. Configure as mesmas três variáveis públicas usadas em `.env.local` em **Project → Settings → Environment Variables**. Para o painel multiempresa, configure também `SUPABASE_SERVICE_ROLE_KEY` e `CRON_SECRET` como variáveis privadas da Vercel (sem o prefixo `NEXT_PUBLIC_`). A chave `service_role` só é lida por rotas de servidor; nunca a coloque no cliente ou no aplicativo desktop. A chave privada VAPID permanece exclusivamente nos secrets da Edge Function.
 3. Publique. O projeto usa os comandos padrão `npm run build` e `npm run start`.
 4. No Supabase Auth, adicione o domínio final em **URL Configuration → Site URL / Redirect URLs**.
 5. Em um domínio próprio, atualize `project_url` no Vault somente se a URL do projeto Supabase tiver mudado (não é a URL Vercel).
 
-## 5. Criar aplicativo portátil para Windows
+## 5. Migrar para multiempresa e configurar o painel Admin
+
+Faça a migração antes de publicar a nova versão do app. Ela não apaga registros: cria a empresa Avisnet, vincula os dados existentes a ela e substitui políticas RLS por políticas de empresa. Faça, ainda assim, um backup completo do projeto no Supabase antes de alterar o banco. O backup por empresa do painel **não substitui** o backup completo do banco.
+
+1. Confirme em **Authentication → Users** que existem exatamente os dois usuários mencionados e que `davi@avisnet.com.br` está cadastrado. Para uma instalação nova, crie esses dois usuários no painel Supabase antes de continuar. A migração falha e reverte a transação inteira se essa pré-condição não for atendida.
+2. Confirme que as tabelas base foram criadas executando `supabase/schema.sql` conforme a seção 1. Se a tabela `notas` ainda não existir, execute também `supabase/add-notas.sql`. Execute antes as migrações já usadas pelo projeto, incluindo `migration-alertas-categorias.sql` e `migration-tipos-agendamento.sql`.
+3. Abra **SQL Editor → New query**, cole o arquivo completo [`supabase/migration-multitenant-admin.sql`](./supabase/migration-multitenant-admin.sql) e selecione **Run**. O script é transacional e idempotente. Na primeira execução, associa os dois usuários à empresa “Avisnet System Informática LTDA”, dá a Davi o papel `admin_empresa` e inclui seu usuário em `super_admins`. Novos usuários não são vinculados automaticamente.
+4. Confira no SQL Editor:
+
+   ```sql
+   select id, nome, status, plano, vencimento
+   from public.empresas
+   order by nome;
+
+   select u.email, m.papel, m.status, e.nome
+   from public.membros m
+   join auth.users u on u.id = m.user_id
+   join public.empresas e on e.id = m.empresa_id
+   order by e.nome, u.email;
+
+   select u.email
+   from public.super_admins s
+   join auth.users u on u.id = s.user_id;
+
+   select 'agendamentos' as tabela, count(*) filter (where empresa_id is null) as sem_empresa from public.agendamentos
+   union all select 'contatos', count(*) filter (where empresa_id is null) from public.contatos
+   union all select 'telefones', count(*) filter (where empresa_id is null) from public.telefones
+   union all select 'observacoes', count(*) filter (where empresa_id is null) from public.observacoes
+   union all select 'notas', count(*) filter (where empresa_id is null) from public.notas;
+   ```
+
+   O último resultado deve ter `sem_empresa = 0` em todas as linhas.
+5. Em **Vercel → Project → Settings → Environment Variables**, adicione:
+
+   ```dotenv
+   SUPABASE_SERVICE_ROLE_KEY=<chave service_role privada do Supabase>
+   CRON_SECRET=<segredo aleatório forte>
+   ```
+
+   Gere um segredo forte e não o reutilize como senha. Adicione ambas as variáveis aos ambientes Vercel em que o app será executado. Nunca use o prefixo `NEXT_PUBLIC_` nelas. A chave de serviço é usada somente em `app/api/admin/*` e no cron do servidor.
+6. Publique a aplicação. O item **Admin** aparece no menu do avatar de super admins. Cada rota de `/api/admin/*` verifica a sessão e o registro em `super_admins`; `middleware.ts` também protege `/admin` e essas APIs. Usuários comuns recebem **403 — Acesso não autorizado**.
+7. Em **Vercel → Settings → Cron Jobs**, confirme `/api/cron/company-backups` (`0 6 * * *`, 03:00 no horário de São Paulo). O cron usa `CRON_SECRET`, cria ZIPs diários das empresas ativas e remove backups com mais de 30 dias. O bucket `empresa-backups` é privado e limita cada ZIP a 50 MB. Se a geração ultrapassar o tempo de execução do plano Vercel, será necessário ajustar o plano ou dividir o trabalho em lotes menores.
+
+### Testes do painel e do isolamento
+
+1. Execute a migração e confira as consultas acima.
+2. Entre como `davi@avisnet.com.br`; abra o menu do avatar e confirme **Admin**. Crie uma empresa de teste e convide um usuário.
+3. Entre com um usuário comum e acesse `/admin` e `/api/admin/companies`; ambos devem responder **403**.
+4. Crie registros na empresa de teste. Confirme que o usuário de outra empresa não os recebe. Para uma conta com vários vínculos, troque a empresa ativa no menu do avatar e confirme que os dados e o cache offline permanecem separados.
+5. No detalhe da empresa de teste, gere um backup manual, baixe o ZIP e confirme que contém metadados e JSON por tabela. Crie/alterе um registro de teste, depois escolha **Restaurar** e digite exatamente o nome da empresa. A restauração substitui somente os dados daquela empresa; antes dela é criado um backup `pre_restauracao`, e a substituição ocorre em uma única transação. Não use dados de produção para o primeiro teste.
+6. Suspenda a empresa de teste e confirme que consultas continuam disponíveis, mas gravações são rejeitadas pelo RLS. Reative-a ao terminar.
+
+### MFA para super admins
+
+Recomendamos exigir MFA/TOTP para a conta `davi@avisnet.com.br` e para qualquer futuro super admin em **Supabase → Authentication → Multi-Factor Authentication**. Guarde os códigos de recuperação fora do repositório e valide o fluxo de recuperação antes de tornar a política obrigatória. O painel ainda valida o papel no servidor; MFA acrescenta proteção à sessão autenticada.
+
+Os ZIPs são backups de dados por empresa e não contêm esquema, configuração do projeto, usuários do Auth ou outros dados globais do Supabase. Mantenha e teste também os backups completos do banco e do Storage.
+
+## 6. Criar aplicativo portátil para Windows
 
 O pacote desktop é uma pasta portátil para Windows 64 bits. Não requer instalar Node.js no computador de destino: o executável inclui o runtime do Electron e inicia o Next.js localmente. Autenticação e sincronização continuam usando o Supabase; portanto, é necessária conexão com a internet para entrar e sincronizar os dados. Nenhuma chave `service_role` deve ser incluída no aplicativo.
 

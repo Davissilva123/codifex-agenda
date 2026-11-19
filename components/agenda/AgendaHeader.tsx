@@ -28,6 +28,11 @@ interface AgendaHeaderProps {
   onNewItem: () => void;
   newItemLabel: string;
   onManageAppointmentTypes: () => void;
+  companies: { id: string; nome: string; status: "ativa" | "suspensa"; papel: "usuario" | "admin_empresa" }[];
+  activeCompanyId: string;
+  onSelectCompany: (companyId: string) => void;
+  isSuperAdmin: boolean;
+  onOpenAdmin?: () => void;
   userName: string;
   userEmail: string;
   notificationCount: number;
@@ -37,7 +42,7 @@ interface AgendaHeaderProps {
   backupBusy?: boolean;
   importBusy?: boolean;
   theme: "light" | "dark";
-  onToggleTheme: () => void;
+  onToggleTheme: (targetTheme?: "light" | "dark") => void;
   alertsOn: boolean;
   pushBusy: boolean;
   onToggleNotifications: () => void;
@@ -82,7 +87,7 @@ function ModuleIcon({ name }: { name: "tasks" | "contacts" | "notes" }) {
   return <svg viewBox="0 0 24 24" {...common}><path d="M6 3.5h12a2 2 0 0 1 2 2v13a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2v-13a2 2 0 0 1 2-2zM8 8h8M8 12h8M8 16h5" /></svg>;
 }
 
-function HeaderIcon({ name }: { name: "plus" | "moon" | "sun" | "bell" | "download" | "logout" | "calendar" | "upload" | "backup" | "install" | "settings" }) {
+function HeaderIcon({ name, className = "" }: { name: "plus" | "moon" | "sun" | "bell" | "download" | "logout" | "calendar" | "upload" | "backup" | "install" | "settings"; className?: string }) {
   const common = {
     fill: "none",
     stroke: "currentColor",
@@ -106,7 +111,7 @@ function HeaderIcon({ name }: { name: "plus" | "moon" | "sun" | "bell" | "downlo
     settings: <><path d="M12.22 2h-.44a2 2 0 0 0-1.99 1.84l-.07.77a2 2 0 0 1-1 1.73l-.8.46a2 2 0 0 1-1.99 0l-.65-.38a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.65.38a2 2 0 0 1 1 1.73v.92a2 2 0 0 1-1 1.73l-.65.38a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.65-.38a2 2 0 0 1 1.99 0l.8.46a2 2 0 0 1 1 1.73l.07.77A2 2 0 0 0 11.78 22h.44a2 2 0 0 0 1.99-1.84l.07-.77a2 2 0 0 1 1-1.73l.8-.46a2 2 0 0 1 1.99 0l.65.38a2 2 0 0 0 2.73-.73l.22-.38a2 2 0 0 0-.73-2.73l-.65-.38a2 2 0 0 1-1-1.73v-.92a2 2 0 0 1 1-1.73l.65-.38a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.65.38a2 2 0 0 1-1.99 0l-.8-.46a2 2 0 0 1-1-1.73l-.07-.77A2 2 0 0 0 12.22 2z" /><circle cx="12" cy="12" r="3" /></>,
   };
 
-  return <svg viewBox="0 0 24 24" {...common}>{paths[name]}</svg>;
+  return <svg viewBox="0 0 24 24" className={className} {...common}>{paths[name]}</svg>;
 }
 
 function ModuleTabs({ view, onViewChange, className = "" }: {
@@ -152,6 +157,11 @@ export function AgendaHeader({
   onNewItem,
   newItemLabel,
   onManageAppointmentTypes,
+  companies,
+  activeCompanyId,
+  onSelectCompany,
+  isSuperAdmin,
+  onOpenAdmin,
   userName,
   userEmail,
   notificationCount,
@@ -288,7 +298,11 @@ export function AgendaHeader({
 
             <div className="app-header-actions">
               {!isOnline && <span className="agenda-status">Modo offline</span>}
-              {pendingSync > 0 && <span className="agenda-status">{pendingSync} pendente(s)</span>}
+              {pendingSync > 0 && (
+                <span className="agenda-status">
+                  {pendingSync} {pendingSync === 1 ? "pendente" : "pendentes"}
+                </span>
+              )}
 
               {view !== "month" && view !== "year" && (
                 <>
@@ -305,9 +319,9 @@ export function AgendaHeader({
                 <button
                   type="button"
                   className="agenda-icon-button"
-                  aria-label={theme === "light" ? "Tema escuro" : "Tema claro"}
-                  title={theme === "light" ? "Tema escuro" : "Tema claro"}
-                  onClick={onToggleTheme}
+                  aria-label={theme === "light" ? "Mudar para tema escuro" : "Mudar para tema claro"}
+                  title={theme === "light" ? "Tema Escuro" : "Tema Claro"}
+                  onClick={() => onToggleTheme()}
                 >
                   <HeaderIcon name={theme === "light" ? "moon" : "sun"} />
                 </button>
@@ -398,7 +412,72 @@ export function AgendaHeader({
                       <strong>{displayName}</strong>
                       <span>{userEmail}</span>
                     </div>
+                    <div className="px-2 pt-1 pb-2">
+                      <span className="block px-1 text-[11px] font-semibold mb-1.5 text-[var(--muted)] uppercase tracking-wider">Tema do sistema</span>
+                      <div className="grid grid-cols-2 gap-1 rounded-xl bg-[var(--track)] p-1 border line">
+                        <button
+                          type="button"
+                          onClick={() => onToggleTheme("light")}
+                          className={`flex items-center justify-center gap-1.5 py-1.5 px-2 rounded-lg text-xs font-semibold transition-all ${
+                            theme === "light"
+                              ? "bg-[var(--surface)] text-[var(--primary)] shadow-sm font-bold"
+                              : "text-[var(--muted)] hover:text-[var(--text)]"
+                          }`}
+                        >
+                          <HeaderIcon name="sun" className="w-3.5 h-3.5" />
+                          <span>Claro</span>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => onToggleTheme("dark")}
+                          className={`flex items-center justify-center gap-1.5 py-1.5 px-2 rounded-lg text-xs font-semibold transition-all ${
+                            theme === "dark"
+                              ? "bg-[var(--surface)] text-[var(--primary)] shadow-sm font-bold"
+                              : "text-[var(--muted)] hover:text-[var(--text)]"
+                          }`}
+                        >
+                          <HeaderIcon name="moon" className="w-3.5 h-3.5" />
+                          <span>Escuro</span>
+                        </button>
+                      </div>
+                    </div>
+                    <label className="block px-3 py-2 text-xs font-semibold">
+                      Empresa ativa
+                      <select
+                        className="field mt-1"
+                        aria-label="Selecionar empresa ativa"
+                        value={activeCompanyId}
+                        onChange={(event) => {
+                          onSelectCompany(event.target.value);
+                          setSettingsMenuOpen(false);
+                        }}
+                      >
+                        {companies.length > 0 ? (
+                          companies.map((company) => (
+                            <option key={company.id} value={company.id}>
+                              {company.nome}{company.status === "suspensa" ? " (suspensa)" : ""}
+                            </option>
+                          ))
+                        ) : (
+                          <option value="">Nenhuma empresa</option>
+                        )}
+                      </select>
+                    </label>
                     <div className="agenda-data-divider" />
+                    {onOpenAdmin && (
+                      <button
+                        type="button"
+                        role="menuitem"
+                        className="agenda-data-item"
+                        onClick={() => {
+                          setSettingsMenuOpen(false);
+                          onOpenAdmin();
+                        }}
+                      >
+                        <span className="agenda-data-icon agenda-data-icon-blue"><HeaderIcon name="settings" /></span>
+                        <span><strong>Painel de empresas</strong><small>Gerenciar empresas, membros e backups</small></span>
+                      </button>
+                    )}
                     <button
                       type="button"
                       role="menuitem"

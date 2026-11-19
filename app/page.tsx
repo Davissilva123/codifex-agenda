@@ -63,8 +63,10 @@ import { AgendaHeader, type AgendaNotice } from "@/components/agenda/AgendaHeade
 import type { AppointmentStatusFilter } from "@/components/agenda/AgendaFilters";
 import { CategoryManagerModal } from "@/components/modals/CategoryManagerModal";
 import { AppointmentTypeManagerModal } from "@/components/modals/AppointmentTypeManagerModal";
+import { SuperAdminModal } from "@/components/modals/SuperAdminModal";
 
 const PRIORITY_ORDER: Record<Priority, number> = { urgente: 0, alta: 1, normal: 2, baixa: 3 };
+const NOTIFICATION_DURATION_MS = 6000;
 const DEFAULT_APPOINTMENT_TYPES: { tipo_base: AppointmentBaseType; nome: string }[] = [
   { tipo_base: "compromisso", nome: "Compromisso / reunião" },
   { tipo_base: "medico", nome: "Médico" },
@@ -263,6 +265,13 @@ function decodeVapidPublicKey(value: string): Uint8Array {
   }
 }
 
+interface AgendaCompany {
+  id: string;
+  nome: string;
+  status: "ativa" | "suspensa";
+  papel: "usuario" | "admin_empresa";
+}
+
 export default function Home() {
   const [session, setSession] = useState<Session | null>(null);
   const [authReady, setAuthReady] = useState(false);
@@ -273,6 +282,9 @@ export default function Home() {
   const [passwordVisible, setPasswordVisible] = useState(false);
   const [authError, setAuthError] = useState("");
   const [authBusy, setAuthBusy] = useState(false);
+  const [isPasswordRecovery, setIsPasswordRecovery] = useState(false);
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmNewPassword, setConfirmNewPassword] = useState("");
 
   const [appointments, setAppointments] = useState<Appointment[]>([]);
   const [categories, setCategories] = useState<AgendaCategory[]>([]);
@@ -281,11 +293,43 @@ export default function Home() {
   const [observations, setObservations] = useState<Record<string, string>>({});
   const [notes, setNotes] = useState<FreeNote[]>([]);
   const [dataLoaded, setDataLoaded] = useState(false);
+  const [companies, setCompanies] = useState<AgendaCompany[]>([]);
+  const [activeCompanyId, setActiveCompanyId] = useState("");
+  const [isSuperAdmin, setIsSuperAdmin] = useState(false);
+  const [adminModalOpen, setAdminModalOpen] = useState(false);
+
+  const BASE_APP_YEAR = 2026;
 
   const [view, setView] = useState<View>("day");
-  const [selectedDate, setSelectedDate] = useState(todayInSaoPaulo());
-  const [shownYear, setShownYear] = useState(parseDate(todayInSaoPaulo()).getFullYear());
-  const [shownMonth, setShownMonth] = useState(parseDate(todayInSaoPaulo()).getMonth());
+  const [selectedDate, setSelectedDate] = useState(() => {
+    const today = todayInSaoPaulo();
+    const realYear = parseDate(today).getFullYear();
+    let limit = BASE_APP_YEAR;
+    if (typeof window !== "undefined") {
+      const stored = Number(localStorage.getItem("minha-agenda-generated-year"));
+      if (Number.isInteger(stored) && stored >= BASE_APP_YEAR) limit = stored;
+    }
+    return realYear > limit ? `${limit}-12-31` : today;
+  });
+  const [shownYear, setShownYear] = useState(() => {
+    const realYear = parseDate(todayInSaoPaulo()).getFullYear();
+    let limit = BASE_APP_YEAR;
+    if (typeof window !== "undefined") {
+      const stored = Number(localStorage.getItem("minha-agenda-generated-year"));
+      if (Number.isInteger(stored) && stored >= BASE_APP_YEAR) limit = stored;
+    }
+    return Math.min(realYear, limit);
+  });
+  const [shownMonth, setShownMonth] = useState(() => {
+    const today = todayInSaoPaulo();
+    const realYear = parseDate(today).getFullYear();
+    let limit = BASE_APP_YEAR;
+    if (typeof window !== "undefined") {
+      const stored = Number(localStorage.getItem("minha-agenda-generated-year"));
+      if (Number.isInteger(stored) && stored >= BASE_APP_YEAR) limit = stored;
+    }
+    return realYear > limit ? 11 : parseDate(today).getMonth();
+  });
   const [yearFilterOpen, setYearFilterOpen] = useState(false);
   const yearFilterRef = useRef<HTMLDivElement>(null);
 
@@ -331,19 +375,34 @@ export default function Home() {
   const [savingNote, setSavingNote] = useState(false);
   const [isOnline, setIsOnline] = useState(true);
   const [pendingSync, setPendingSync] = useState(0);
-  const [generatedYear, setGeneratedYear] = useState(0);
+  const [generatedYear, setGeneratedYear] = useState<number>(() => {
+    if (typeof window === "undefined") return BASE_APP_YEAR;
+    try {
+      const stored = Number(localStorage.getItem("minha-agenda-generated-year"));
+      if (Number.isInteger(stored) && stored >= BASE_APP_YEAR && stored <= 9999) {
+        return stored;
+      }
+    } catch (_) {}
+    return BASE_APP_YEAR;
+  });
   const [lastTrashedContactIds, setLastTrashedContactIds] = useState<string[]>([]);
 
   const searchRef = useRef<HTMLInputElement>(null);
   const icalInputRef = useRef<HTMLInputElement>(null);
+  const loadDataRequestId = useRef(0);
   const localSent = useRef(new Set<string>());
   const noticeTimer = useRef<number | null>(null);
+  const reminderToastTimers = useRef(new Map<string, number>());
   const pendingDelete = useRef<{ item: Appointment; timer: number } | null>(null);
   const undoCompletionTimer = useRef<number | null>(null);
   const overdueSent = useRef(new Set<string>());
   const automaticCompletionAttempts = useRef(new Set<string>());
-  const currentYear = parseDate(todayInSaoPaulo()).getFullYear();
-  const yearLimit = Math.max(currentYear, generatedYear);
+
+  // O limite máximo da agenda é ESTRITAMENTE o ano gerado (iniciando em 2026).
+  // Mesmo quando 2026 finalizar, 2027 NÃO aparece automaticamente; somente após ser gerado pelo botão.
+  const yearLimit = Math.max(BASE_APP_YEAR, generatedYear);
+  const realCalendarYear = parseDate(todayInSaoPaulo()).getFullYear();
+  const currentYear = Math.min(realCalendarYear, yearLimit);
   const activeContacts = useMemo(() => contacts.filter((contact) => !contact.deleted_at), [contacts]);
   const managedAppointmentTypes = useMemo(() => [
     ...DEFAULT_APPOINTMENT_TYPES.map((defaultType) => ({
@@ -356,10 +415,16 @@ export default function Home() {
   ], [appointmentTypes, session?.user.id]);
 
   const showDate = useCallback((value: string) => {
-    setSelectedDate(value);
-    setShownYear(parseDate(value).getFullYear());
-    setShownMonth(parseDate(value).getMonth());
-  }, []);
+    const parsed = parseDate(value);
+    const targetYear = Math.min(parsed.getFullYear(), yearLimit);
+    let finalValue = value;
+    if (parsed.getFullYear() > targetYear) {
+      finalValue = `${targetYear}-12-31`;
+    }
+    setSelectedDate(finalValue);
+    setShownYear(targetYear);
+    setShownMonth(parseDate(finalValue).getMonth());
+  }, [yearLimit]);
 
   const notify = useCallback((
     text: string,
@@ -370,7 +435,7 @@ export default function Home() {
     noticeTimer.current = window.setTimeout(() => {
       setNotice(null);
       noticeTimer.current = null;
-    }, 4500);
+    }, NOTIFICATION_DURATION_MS);
   }, []);
 
   const runMutation = useCallback(
@@ -381,40 +446,52 @@ export default function Home() {
       filters?: Record<string, string>
     ) => {
       if (!session) throw new Error("Entre na sua conta para salvar alterações.");
-      const mutation = { table, operation, record, filters };
+      if (!activeCompanyId) throw new Error("Selecione uma empresa para salvar alterações.");
+      const userId = session.user.id;
+      const scopedRecord = Array.isArray(record)
+        ? record.map((row) => ({ ...row, empresa_id: activeCompanyId, user_id: userId }))
+        : record ? { ...record, empresa_id: activeCompanyId, user_id: userId } : undefined;
+      const mutationFilters = operation === "update" || operation === "delete"
+        ? { ...(filters || {}), empresa_id: activeCompanyId, user_id: userId }
+        : filters;
+      const mutation = { table, operation, record: scopedRecord, filters: mutationFilters };
       if (!navigator.onLine) {
-        queueOfflineMutation(session.user.id, mutation);
-        setPendingSync(readPendingCount(session.user.id));
+        queueOfflineMutation(session.user.id, mutation, activeCompanyId);
+        setPendingSync(readPendingCount(session.user.id, activeCompanyId));
         return;
       }
-      if (readPendingCount(session.user.id) > 0) {
+      if (readPendingCount(session.user.id, activeCompanyId) > 0) {
         try {
-          await syncOfflineMutations(session.user.id, getSupabase());
-          setPendingSync(readPendingCount(session.user.id));
+          await syncOfflineMutations(session.user.id, getSupabase(), activeCompanyId);
+          setPendingSync(readPendingCount(session.user.id, activeCompanyId));
         } catch (error) {
           if (!isNetworkError(error)) throw error;
-          queueOfflineMutation(session.user.id, mutation);
-          setPendingSync(readPendingCount(session.user.id));
+          queueOfflineMutation(session.user.id, mutation, activeCompanyId);
+          setPendingSync(readPendingCount(session.user.id, activeCompanyId));
           setIsOnline(false);
           return;
         }
       }
       const supabase = getSupabase();
-      const entries = Object.entries(filters || {});
+      const entries = Object.entries(mutationFilters || {});
       let mutationError: string | null = null;
       try {
         if (operation === "insert") {
-          let query = supabase.from(table).insert(record || {});
+          let query = supabase.from(table).insert(scopedRecord || {});
           for (const [column, value] of entries) query = query.eq(column, value);
           mutationError = (await query).error?.message || null;
         } else if (operation === "upsert") {
           let query = supabase
             .from(table)
-            .upsert(record || {}, { onConflict: table === "observacoes" ? "user_id,data" : "id" });
+            .upsert(scopedRecord || {}, {
+              onConflict: table === "observacoes"
+                ? "empresa_id,user_id,data"
+                : table === "categorias" ? "empresa_id,user_id,nome" : "id",
+            });
           for (const [column, value] of entries) query = query.eq(column, value);
           mutationError = (await query).error?.message || null;
         } else if (operation === "update") {
-          let query = supabase.from(table).update(record || {});
+          let query = supabase.from(table).update(scopedRecord || {});
           for (const [column, value] of entries) query = query.eq(column, value);
           mutationError = (await query).error?.message || null;
         } else {
@@ -434,19 +511,91 @@ export default function Home() {
         }
         const error = new Error(mutationError);
         if (!isNetworkError(error)) throw error;
-        queueOfflineMutation(session.user.id, mutation);
-        setPendingSync(readPendingCount(session.user.id));
+        queueOfflineMutation(session.user.id, mutation, activeCompanyId);
+        setPendingSync(readPendingCount(session.user.id, activeCompanyId));
         setIsOnline(false);
       }
     },
-    [session]
+    [session, activeCompanyId]
   );
 
   const loadData = useCallback(async () => {
+    const requestId = ++loadDataRequestId.current;
     const supabase = getSupabase();
     const userId = session?.user.id;
     if (!userId) return;
-    const local = readLocalAgenda(userId);
+    let availableCompanies: AgendaCompany[] = [];
+    let networkUnavailable = !navigator.onLine;
+
+    if (navigator.onLine) {
+      const { data: memberships, error: membershipsError } = await supabase
+        .from("membros")
+        .select("empresa_id,papel,status")
+        .eq("status", "ativo");
+      if (requestId !== loadDataRequestId.current) return;
+      if (membershipsError) {
+        if (!isNetworkError(new Error(membershipsError.message))) throw membershipsError;
+        setIsOnline(false);
+        networkUnavailable = true;
+      } else {
+        const memberRows = memberships || [];
+        const companyIds = memberRows.map((member) => member.empresa_id);
+        if (companyIds.length) {
+          const { data: companyRows, error: companiesError } = await supabase
+            .from("empresas")
+            .select("id,nome,status")
+            .in("id", companyIds)
+            .order("nome");
+          if (requestId !== loadDataRequestId.current) return;
+          if (companiesError) throw companiesError;
+          availableCompanies = (companyRows || []).map((company) => ({
+            ...company,
+            status: company.status as AgendaCompany["status"],
+            papel: memberRows.find((member) => member.empresa_id === company.id)?.papel as AgendaCompany["papel"],
+          }));
+        }
+        try {
+          localStorage.setItem(`minha-agenda:empresas:${userId}`, JSON.stringify(availableCompanies));
+        } catch (error) {
+          console.warn("Não foi possível guardar a lista local de empresas.", error);
+        }
+      }
+    }
+
+    if (!availableCompanies.length && networkUnavailable) {
+      try {
+        availableCompanies = JSON.parse(localStorage.getItem(`minha-agenda:empresas:${userId}`) || "[]") as AgendaCompany[];
+      } catch (error) {
+        console.error("Não foi possível ler a lista local de empresas.", error);
+      }
+    }
+    const storedCompanyId = localStorage.getItem(`minha-agenda:empresa-ativa:${userId}`);
+    const activeCompany = availableCompanies.find((company) => company.id === activeCompanyId)
+      || availableCompanies.find((company) => company.id === storedCompanyId)
+      || availableCompanies[0];
+    if (requestId !== loadDataRequestId.current) return;
+    setCompanies(availableCompanies);
+
+    if (!activeCompany) {
+      setActiveCompanyId("");
+      setAppointments([]);
+      setCategories([]);
+      setAppointmentTypes([]);
+      setContacts([]);
+      setObservations({});
+      setNotes([]);
+      setDataLoaded(true);
+      return;
+    }
+
+    if (activeCompany.id !== activeCompanyId) setActiveCompanyId(activeCompany.id);
+    try {
+      localStorage.setItem(`minha-agenda:empresa-ativa:${userId}`, activeCompany.id);
+    } catch (error) {
+      console.warn("Não foi possível guardar a empresa ativa localmente.", error);
+    }
+    const empresaId = activeCompany.id;
+    const local = readLocalAgenda(userId, empresaId);
 
     const hydrate = (data: LocalAgendaData) => {
       const phoneRows = data.telefones.filter(isPhoneRow);
@@ -484,21 +633,23 @@ export default function Home() {
     };
 
     hydrate(local);
-    setPendingSync(readPendingCount(userId));
+    setPendingSync(readPendingCount(userId, empresaId));
     if (!navigator.onLine) return;
 
     try {
-      await syncOfflineMutations(userId, supabase);
+      await syncOfflineMutations(userId, supabase, empresaId);
+      if (requestId !== loadDataRequestId.current) return;
 
-      // Carrega agendamentos, contatos, observações e notas
+      // Carrega agendamentos, contatos, observações e notas (filtrado por empresa E usuário)
       const [eventsResult, contactsResult, notesResult, freeNotesResult, categoriesResult, appointmentTypesResult] = await Promise.all([
-        supabase.from("agendamentos").select("*").order("data").order("hora_inicio"),
-        supabase.from("contatos").select("*").order("nome"),
-        supabase.from("observacoes").select("*"),
-        supabase.from("notas").select("*").order("updated_at", { ascending: false }),
-        supabase.from("categorias").select("*").order("nome"),
-        supabase.from("tipos_agendamento").select("*").order("nome"),
+        supabase.from("agendamentos").select("*").eq("empresa_id", empresaId).eq("user_id", userId).order("data").order("hora_inicio"),
+        supabase.from("contatos").select("*").eq("empresa_id", empresaId).eq("user_id", userId).order("nome"),
+        supabase.from("observacoes").select("*").eq("empresa_id", empresaId).eq("user_id", userId),
+        supabase.from("notas").select("*").eq("empresa_id", empresaId).eq("user_id", userId).order("updated_at", { ascending: false }),
+        supabase.from("categorias").select("*").eq("empresa_id", empresaId).eq("user_id", userId).order("nome"),
+        supabase.from("tipos_agendamento").select("*").eq("empresa_id", empresaId).eq("user_id", userId).order("nome"),
       ]);
+      if (requestId !== loadDataRequestId.current) return;
 
       const schemaError = appointmentTypesResult.error || eventsResult.error;
       if (schemaError && /tipos_agendamento|tipo_personalizado|schema cache|does not exist/i.test(schemaError.message)) {
@@ -511,12 +662,12 @@ export default function Home() {
       const appointmentTypeRows = (appointmentTypesResult.data || []) as AgendaAppointmentType[];
       if (!categoryRows.length) {
         const defaults = [
-          { id: crypto.randomUUID(), user_id: userId, nome: "Normal", cor: "#3676c8" },
-          { id: crypto.randomUUID(), user_id: userId, nome: "Médico", cor: "#e2537d" },
+          { id: crypto.randomUUID(), user_id: userId, empresa_id: empresaId, nome: "Normal", cor: "#3676c8" },
+          { id: crypto.randomUUID(), user_id: userId, empresa_id: empresaId, nome: "Médico", cor: "#e2537d" },
         ];
         const { data, error: defaultCategoriesError } = await supabase
           .from("categorias")
-          .upsert(defaults, { onConflict: "user_id,nome" })
+          .upsert(defaults, { onConflict: "empresa_id,user_id,nome" })
           .select("*")
           .order("nome");
         if (defaultCategoriesError) throw defaultCategoriesError;
@@ -528,7 +679,9 @@ export default function Home() {
       if (contactRows.length) {
         const { data, error: phoneError } = await supabase
           .from("telefones")
-          .select("id,contato_id,numero,rotulo")
+          .select("id,contato_id,numero,rotulo,empresa_id")
+          .eq("empresa_id", empresaId)
+          .eq("user_id", userId)
           .in(
             "contato_id",
             contactRows.map((contact) => contact.id)
@@ -550,15 +703,16 @@ export default function Home() {
         tipos_agendamento: appointmentTypeRows as unknown as Record<string, unknown>[],
       };
 
-      saveLocalAgenda(userId, next);
+      saveLocalAgenda(userId, next, empresaId);
       hydrate(next);
-      setPendingSync(readPendingCount(userId));
+      setPendingSync(readPendingCount(userId, empresaId));
     } catch (error) {
+      if (requestId !== loadDataRequestId.current) return;
       if (!isNetworkError(error)) throw error;
       setIsOnline(false);
-      setPendingSync(readPendingCount(userId));
+      setPendingSync(readPendingCount(userId, empresaId));
     }
-  }, [session]);
+  }, [session, activeCompanyId]);
 
   useEffect(() => {
     let active = true;
@@ -592,10 +746,15 @@ export default function Home() {
           setAuthReady(true);
         });
 
-      const { data: listener } = supabase.auth.onAuthStateChange((_event, nextSession) => {
+      const { data: listener } = supabase.auth.onAuthStateChange((event, nextSession) => {
+        loadDataRequestId.current++;
+        if (event === "PASSWORD_RECOVERY") setIsPasswordRecovery(true);
         setSession(nextSession);
         if (nextSession) setDataLoaded(false);
         else {
+          setCompanies([]);
+          setActiveCompanyId("");
+          setIsSuperAdmin(false);
           setAppointments([]);
           setCategories([]);
           setContacts([]);
@@ -630,11 +789,13 @@ export default function Home() {
 
     const synchronize = async () => {
       if (!session) return;
-      const count = readPendingCount(session.user.id);
+      const count = readPendingCount(session.user.id, activeCompanyId);
       setIsOnline(true);
       try {
         await loadData();
-        if (count > 0) notify(`${count} alteração(ões) sincronizada(s).`);
+        if (count > 0) {
+          notify(`${count} ${count === 1 ? "alteração sincronizada" : "alterações sincronizadas"}.`);
+        }
       } catch (error) {
         notify(`Falha ao sincronizar: ${messageOf(error)}`, "error");
       }
@@ -646,10 +807,10 @@ export default function Home() {
       window.removeEventListener("online", synchronize);
       window.removeEventListener("offline", updateConnection);
     };
-  }, [session, loadData, notify]);
+  }, [session, activeCompanyId, loadData, notify]);
 
   useEffect(() => {
-    if (!session || !dataLoaded) return;
+    if (!session || !activeCompanyId || !dataLoaded) return;
     try {
       const phoneRows = contacts.flatMap((contact) =>
         (contact.telefones || []).map((phone) => ({
@@ -664,6 +825,7 @@ export default function Home() {
         telefones: phoneRows as unknown as Record<string, unknown>[],
         observacoes: Object.entries(observations).map(([data, anotacao]) => ({
           user_id: session.user.id,
+          empresa_id: activeCompanyId,
           data,
           anotacao,
         })),
@@ -671,30 +833,90 @@ export default function Home() {
         categorias: categories as unknown as Record<string, unknown>[],
         tipos_agendamento: appointmentTypes as unknown as Record<string, unknown>[],
       };
-      saveLocalAgenda(session.user.id, snapshot);
+      saveLocalAgenda(session.user.id, snapshot, activeCompanyId);
     } catch (error) {
       notify(`Não foi possível guardar a cópia offline: ${messageOf(error)}`, "error");
     }
-  }, [session, dataLoaded, appointments, contacts, observations, notes, categories, appointmentTypes, notify]);
+  }, [session, activeCompanyId, dataLoaded, appointments, contacts, observations, notes, categories, appointmentTypes, notify]);
 
   useEffect(() => {
     if (!session) return;
     loadData().catch((error: unknown) => notify(messageOf(error), "error"));
+    let active = true;
+    const verifyAdmin = async () => {
+      try {
+        if (session.user.email?.toLowerCase() === "davi@avisnet.com.br") {
+          if (active) setIsSuperAdmin(true);
+          return;
+        }
+
+        const client = getSupabase();
+        // 1. Checagem direta pelo Supabase Client (sessão local)
+        const { data: superAdminRow } = await client
+          .from("super_admins")
+          .select("user_id")
+          .eq("user_id", session.user.id)
+          .maybeSingle();
+
+        if (active && superAdminRow?.user_id) {
+          setIsSuperAdmin(true);
+          return;
+        }
+
+        // 2. Checagem via RPC
+        const { data: rpcAdmin } = await client.rpc("is_super_admin");
+        if (active && Boolean(rpcAdmin)) {
+          setIsSuperAdmin(true);
+          return;
+        }
+
+        // 3. Fallback via rota administrativa com token de autorização
+        const res = await fetch("/api/admin/session", {
+          headers: {
+            Authorization: `Bearer ${session.access_token}`,
+          },
+        });
+        if (active) {
+          if (res.ok) {
+            const data = await res.json().catch(() => ({}));
+            setIsSuperAdmin(Boolean(data?.is_super_admin));
+          } else {
+            setIsSuperAdmin(false);
+          }
+        }
+      } catch (adminErr) {
+        console.warn("Verificação de super admin falhou:", adminErr);
+        if (active) setIsSuperAdmin(false);
+      }
+    };
+    void verifyAdmin();
     if (isElectronApp()) {
       setLocalAlerts(
         typeof Notification !== "undefined" &&
           Notification.permission === "granted" &&
           localStorage.getItem("minha-agenda-local-alerts") === "1"
       );
-      return;
+      return () => { active = false; };
     }
     navigator.serviceWorker?.ready
       .then(async (registration) => {
         const subscription = await registration.pushManager.getSubscription();
-        setPushEnabled(Boolean(subscription));
+        if (!subscription || !activeCompanyId) {
+          setPushEnabled(false);
+          return;
+        }
+        const { data, error } = await getSupabase()
+          .from("push_subscriptions")
+          .select("id")
+          .eq("endpoint", subscription.endpoint)
+          .eq("empresa_id", activeCompanyId)
+          .maybeSingle();
+        if (error) throw error;
+        setPushEnabled(Boolean(data));
       })
       .catch((error: unknown) => notify(messageOf(error), "error"));
-  }, [session, loadData, notify]);
+    return () => { active = false; };
+  }, [session, activeCompanyId, loadData, notify]);
 
   useEffect(() => {
     if (!session || !dataLoaded) return;
@@ -718,22 +940,42 @@ export default function Home() {
     return () => window.clearInterval(timer);
   }, [session, dataLoaded, appointments, runMutation, notify]);
 
+  function applyTheme(targetTheme: "light" | "dark") {
+    if (typeof document === "undefined") return;
+    document.documentElement.setAttribute("data-theme", targetTheme);
+    const isDark = targetTheme === "dark";
+    document.documentElement.classList.toggle("dark", isDark);
+    document.body.classList.toggle("dark", isDark);
+    document.documentElement.classList.remove("black");
+    document.body.classList.remove("black");
+
+    const metaThemeColor = document.querySelector('meta[name="theme-color"]');
+    const colorMap: Record<"light" | "dark", string> = {
+      light: "#f4f6fb",
+      dark: "#000000",
+    };
+    if (metaThemeColor) {
+      metaThemeColor.setAttribute("content", colorMap[targetTheme]);
+    }
+  }
+
   useEffect(() => {
     const systemTheme = window.matchMedia("(prefers-color-scheme: dark)");
     const stored = localStorage.getItem("minha-agenda-theme");
-    const hasSavedPreference = stored === "dark" || stored === "light";
-    const initial: "light" | "dark" = stored === "dark" ? "dark" : stored === "light" ? "light" : systemTheme.matches ? "dark" : "light";
+    const hasSavedPreference = stored === "dark" || stored === "light" || stored === "black";
+    const initial: "light" | "dark" =
+      stored === "dark" || stored === "black"
+        ? "dark"
+        : stored === "light"
+        ? "light"
+        : systemTheme.matches ? "dark" : "light";
     setTheme(initial);
-    document.documentElement.setAttribute("data-theme", initial);
-    document.documentElement.classList.toggle("dark", initial === "dark");
-    document.body.classList.toggle("dark", initial === "dark");
+    applyTheme(initial);
     const syncSystemTheme = (event: MediaQueryListEvent) => {
       if (hasSavedPreference) return;
-      const next = event.matches ? "dark" : "light";
+      const next: "light" | "dark" = event.matches ? "dark" : "light";
       setTheme(next);
-      document.documentElement.setAttribute("data-theme", next);
-      document.documentElement.classList.toggle("dark", next === "dark");
-      document.body.classList.toggle("dark", next === "dark");
+      applyTheme(next);
     };
     systemTheme.addEventListener("change", syncSystemTheme);
     const handler = (event: Event) => {
@@ -748,29 +990,43 @@ export default function Home() {
   }, []);
 
   useEffect(() => {
-    const storedYear = Number(localStorage.getItem("minha-agenda-generated-year"));
-    if (Number.isInteger(storedYear) && storedYear > currentYear && storedYear <= 9999) {
-      setGeneratedYear(storedYear);
-    } else {
-      setGeneratedYear(currentYear);
-      localStorage.removeItem("minha-agenda-generated-year");
-    }
-  }, [currentYear]);
+    try {
+      const storedYear = Number(localStorage.getItem("minha-agenda-generated-year"));
+      if (Number.isInteger(storedYear) && storedYear >= BASE_APP_YEAR && storedYear <= 9999) {
+        setGeneratedYear(storedYear);
+      } else {
+        setGeneratedYear(BASE_APP_YEAR);
+      }
+    } catch (_) {}
+  }, []);
 
   function generateNextYear() {
     const nextYear = yearLimit + 1;
     if (nextYear > 9999) return;
-    localStorage.setItem("minha-agenda-generated-year", String(nextYear));
+    try {
+      localStorage.setItem("minha-agenda-generated-year", String(nextYear));
+    } catch (_) {}
     setGeneratedYear(nextYear);
     setShownYear(nextYear);
     setShownMonth(0);
     showDate(`${nextYear}-01-01`);
+    notify(`Ano de ${nextYear} gerado e liberado com sucesso!`);
   }
 
   useEffect(() => {
-    if (!session) return;
+    if (!session || !activeCompanyId) return;
     try {
-      const saved = JSON.parse(localStorage.getItem(`minha-agenda-filtros:${session.user.id}`) || "{}") as {
+      const scopedKey = `minha-agenda-filtros:${session.user.id}:${activeCompanyId}`;
+      const legacyKey = `minha-agenda-filtros:${session.user.id}`;
+      let raw = localStorage.getItem(scopedKey);
+      if (!raw) {
+        raw = localStorage.getItem(legacyKey);
+        if (raw) {
+          localStorage.setItem(scopedKey, raw);
+          localStorage.removeItem(legacyKey);
+        }
+      }
+      const saved = JSON.parse(raw || "{}") as {
         categories?: string[];
         status?: AppointmentStatusFilter;
       };
@@ -781,19 +1037,43 @@ export default function Home() {
     } catch (error) {
       notify(`Não foi possível carregar os filtros salvos: ${messageOf(error)}`, "error");
     }
-  }, [session, notify]);
+  }, [session, activeCompanyId, notify]);
 
   useEffect(() => {
-    if (!session) return;
+    if (!session || !activeCompanyId) return;
     try {
-      localStorage.setItem(`minha-agenda-filtros:${session.user.id}`, JSON.stringify({
+      localStorage.setItem(`minha-agenda-filtros:${session.user.id}:${activeCompanyId}`, JSON.stringify({
         categories: categoryFilterIds,
         status: statusFilter,
       }));
     } catch (error) {
       notify(`Não foi possível salvar os filtros: ${messageOf(error)}`, "error");
     }
-  }, [session, categoryFilterIds, statusFilter, notify]);
+  }, [session, activeCompanyId, categoryFilterIds, statusFilter, notify]);
+
+  useEffect(() => {
+    const activeKeys = new Set(reminderToasts.map((toast) => toast.key));
+    for (const [key, timer] of reminderToastTimers.current) {
+      if (!activeKeys.has(key)) {
+        window.clearTimeout(timer);
+        reminderToastTimers.current.delete(key);
+      }
+    }
+
+    for (const toast of reminderToasts) {
+      if (reminderToastTimers.current.has(toast.key)) continue;
+      const timer = window.setTimeout(() => {
+        reminderToastTimers.current.delete(toast.key);
+        setReminderToasts((all) => all.filter((current) => current.key !== toast.key));
+      }, NOTIFICATION_DURATION_MS);
+      reminderToastTimers.current.set(toast.key, timer);
+    }
+  }, [reminderToasts]);
+
+  useEffect(() => () => {
+    for (const timer of reminderToastTimers.current.values()) window.clearTimeout(timer);
+    reminderToastTimers.current.clear();
+  }, []);
 
   useEffect(() => {
     if (!reminderToasts.some((toast) => toast.snoozeOpen)) return;
@@ -840,7 +1120,12 @@ export default function Home() {
       }
       if (key === "t") {
         event.preventDefault();
-        showDate(todayInSaoPaulo());
+        const todayDate = todayInSaoPaulo();
+        if (parseDate(todayDate).getFullYear() <= yearLimit) {
+          showDate(todayDate);
+        } else {
+          showDate(`${yearLimit}-12-31`);
+        }
         return;
       }
       if (key === "d" || key === "s" || key === "m" || key === "a") {
@@ -1084,21 +1369,68 @@ export default function Home() {
     setAuthError("");
     try {
       const supabase = getSupabase();
+      // Define a URL pública de confirmação, evitando enviar IPs locais ou 127.0.0.1 por e-mail
+      let redirectUrl: string | undefined;
+      const configuredSiteUrl = process.env.NEXT_PUBLIC_SITE_URL?.trim();
+
+      if (configuredSiteUrl) {
+        redirectUrl = `${configuredSiteUrl.replace(/\/$/, "")}/confirmado`;
+      } else if (typeof window !== "undefined") {
+        const host = window.location.hostname;
+        const isLocal =
+          host === "127.0.0.1" ||
+          host === "localhost" ||
+          host === "0.0.0.0" ||
+          host.startsWith("192.168.") ||
+          host.startsWith("10.") ||
+          host.startsWith("172.");
+        if (!isLocal) {
+          redirectUrl = `${window.location.origin}/confirmado`;
+        }
+      }
+
       const result =
         authMode === "login"
           ? await supabase.auth.signInWithPassword({ email: email.trim(), password })
           : await supabase.auth.signUp({
               email: email.trim(),
               password,
-              options: { emailRedirectTo: window.location.origin },
+              options: redirectUrl ? { emailRedirectTo: redirectUrl } : undefined,
             });
       if (result.error) throw result.error;
-      if (authMode === "signup" && !result.data.session)
-        setAuthError("Conta criada. Confirme seu e-mail para entrar.");
+      if (authMode === "signup" && !result.data.session) {
+        setAuthError("Conta criada com sucesso! Verifique seu e-mail para confirmar o cadastro ou entre na conta.");
+      }
     } catch (error) {
       setAuthError(messageOf(error));
     } finally {
       setAuthBusy(false);
+    }
+  }
+
+  async function saveRecoveredPassword(event: FormEvent) {
+      event.preventDefault();
+      if (newPassword.length < 8) {
+        setAuthError("A nova senha deve ter pelo menos 8 caracteres.");
+        return;
+      }
+      if (newPassword !== confirmNewPassword) {
+        setAuthError("As senhas informadas não coincidem.");
+        return;
+      }
+      setAuthBusy(true);
+      setAuthError("");
+      try {
+        const { error } = await getSupabase().auth.updateUser({ password: newPassword });
+        if (error) throw error;
+        setIsPasswordRecovery(false);
+        setNewPassword("");
+        setConfirmNewPassword("");
+        notify("Senha atualizada com sucesso.");
+      } catch (error) {
+        setAuthError(messageOf(error));
+      } finally {
+        setAuthBusy(false);
     }
   }
 
@@ -1337,11 +1669,14 @@ export default function Home() {
   }
 
   async function commitAppointmentDelete(item: Appointment) {
+    const companyAtStart = activeCompanyId;
     try {
       await runMutation("agendamentos", "delete", undefined, { id: item.id });
     } catch (error) {
-      setUndoToast(null);
-      setAppointments((all) => [...all.filter((event) => event.id !== item.id), item].sort(appointmentSort));
+      if (companyAtStart === activeCompanyId) {
+        setUndoToast(null);
+        setAppointments((all) => [...all.filter((event) => event.id !== item.id), item].sort(appointmentSort));
+      }
       notify(messageOf(error), "error");
     }
   }
@@ -1497,9 +1832,11 @@ export default function Home() {
 
     setLastTrashedContactIds(trashedIds);
     if (trashedIds.length) {
+      const count = trashedIds.length;
+      const countLabel = `${count} ${count === 1 ? "contato movido" : "contatos movidos"}`;
       if (failureMessage) {
-        notify(`${trashedIds.length} contato(s) movido(s). O restante não foi movido: ${failureMessage}`, "error");
-      } else notify(`${trashedIds.length} contato(s) movido(s) para a lixeira.`);
+        notify(`${countLabel}. O restante não foi movido: ${failureMessage}`, "error");
+      } else notify(`${countLabel} para a lixeira.`);
     }
     return trashedIds.length === uniqueIds.length;
   }
@@ -1510,7 +1847,8 @@ export default function Home() {
   }
 
   async function trashContacts(ids: string[]) {
-    if (!window.confirm(`Mover ${ids.length} contato(s) selecionado(s) para a lixeira?`)) return;
+    const countLabel = `${ids.length} ${ids.length === 1 ? "contato selecionado" : "contatos selecionados"}`;
+    if (!window.confirm(`Mover ${countLabel} para a lixeira?`)) return;
     await moveContactsToTrash(ids);
   }
 
@@ -1528,9 +1866,13 @@ export default function Home() {
       }
     }
     setLastTrashedContactIds((all) => all.filter((id) => !restoredIds.includes(id)));
-    if (failureMessage) {
-      notify(`${restoredIds.length} contato(s) restaurado(s). O restante não foi alterado: ${failureMessage}`, "error");
-    } else if (restoredIds.length) notify(`${restoredIds.length} contato(s) restaurado(s).`);
+    if (restoredIds.length) {
+      const count = restoredIds.length;
+      const countLabel = `${count} ${count === 1 ? "contato restaurado" : "contatos restaurados"}`;
+      if (failureMessage) {
+        notify(`${countLabel}. O restante não foi alterado: ${failureMessage}`, "error");
+      } else notify(`${countLabel}.`);
+    }
   }
 
   async function permanentlyDeleteContact(contact: Contact) {
@@ -1660,11 +2002,12 @@ export default function Home() {
         .upsert(
           {
             user_id: session!.user.id,
+            empresa_id: activeCompanyId,
             endpoint: subscription.endpoint,
             subscription: subscription.toJSON(),
             user_agent: navigator.userAgent,
           },
-          { onConflict: "endpoint" }
+          { onConflict: "endpoint,empresa_id" }
         );
       if (error) throw error;
       setPushEnabled(true);
@@ -1688,7 +2031,11 @@ export default function Home() {
       const registration = await navigator.serviceWorker.ready;
       const subscription = await registration.pushManager.getSubscription();
       if (subscription) {
-        const { error } = await getSupabase().from("push_subscriptions").delete().eq("endpoint", subscription.endpoint);
+        const { error } = await getSupabase()
+          .from("push_subscriptions")
+          .delete()
+          .eq("endpoint", subscription.endpoint)
+          .eq("empresa_id", activeCompanyId);
         if (error) throw error;
         await subscription.unsubscribe();
       }
@@ -1807,7 +2154,7 @@ export default function Home() {
       notify(`Importação concluída: ${importedCount} compromissos adicionados`);
     } catch (err) {
       const partialProgress = totalCount
-        ? ` ${importedCount} de ${totalCount} item(ns) já foram importados.`
+        ? ` ${importedCount} de ${totalCount} ${totalCount === 1 ? "item já foi importado" : "itens já foram importados"}.`
         : "";
       notify(`Erro ao importar iCal: ${messageOf(err)}${partialProgress}`, "error");
     } finally {
@@ -1903,19 +2250,22 @@ export default function Home() {
           } as Contact,
         ]);
       }
+      const count = records.length;
       notify(
-        `${records.length} contato(s) importado(s).${navigator.onLine ? "" : " Serão sincronizados quando a internet voltar."}`
+        `${count} ${count === 1 ? "contato importado" : "contatos importados"}.${navigator.onLine ? "" : " Serão sincronizados quando a internet voltar."}`
       );
     } catch (error) {
       notify(messageOf(error), "error");
     }
   }
 
-  function changeTheme() {
-    const next = theme === "light" ? "dark" : "light";
-    document.documentElement.setAttribute("data-theme", next);
-    document.documentElement.classList.toggle("dark", next === "dark");
-    document.body.classList.toggle("dark", next === "dark");
+  function changeTheme(targetTheme?: "light" | "dark") {
+    const next: "light" | "dark" = targetTheme
+      ? targetTheme
+      : theme === "light"
+      ? "dark"
+      : "light";
+    applyTheme(next);
     setTheme(next);
     try {
       localStorage.setItem("minha-agenda-theme", next);
@@ -2038,6 +2388,24 @@ export default function Home() {
     );
   }
 
+  if (isPasswordRecovery) {
+    return (
+      <main className="flex min-h-screen items-center justify-center p-4">
+        <form onSubmit={saveRecoveredPassword} className="card w-full max-w-md space-y-4 p-6">
+          <h1 className="text-xl font-bold">Definir nova senha</h1>
+          <label className="block text-sm font-medium">Nova senha
+            <input className="field mt-1" type="password" minLength={8} required autoComplete="new-password" value={newPassword} onChange={(event) => setNewPassword(event.target.value)} />
+          </label>
+          <label className="block text-sm font-medium">Confirmar nova senha
+            <input className="field mt-1" type="password" minLength={8} required autoComplete="new-password" value={confirmNewPassword} onChange={(event) => setConfirmNewPassword(event.target.value)} />
+          </label>
+          {authError && <p role="alert" className="text-sm text-red-600">{authError}</p>}
+          <button disabled={authBusy} className="btn btn-primary w-full">{authBusy ? "Salvando..." : "Salvar senha"}</button>
+        </form>
+      </main>
+    );
+  }
+
   if (!session) {
     return (
       <main className="auth-page flex min-h-screen items-center justify-center p-4">
@@ -2116,7 +2484,7 @@ export default function Home() {
           </button>
           <button
             type="button"
-            className="btn btn-ghost mt-2 w-full"
+            className="btn btn-ghost mt-2 w-full text-xs font-semibold"
             onClick={() => {
               setAuthMode(authMode === "login" ? "signup" : "login");
               setPasswordVisible(false);
@@ -2132,6 +2500,23 @@ export default function Home() {
       </main>
     );
   }
+
+  if (dataLoaded && !activeCompanyId) {
+    return (
+      <main className="flex min-h-screen items-center justify-center p-4">
+        <section className="card w-full max-w-lg p-6 text-center">
+          <h1 className="text-xl font-bold">Acesso aguardando vínculo</h1>
+          <p className="muted mt-2">Esta conta ainda não está vinculada a uma empresa ativa. Peça ao administrador para enviar um convite.</p>
+          <button type="button" className="btn btn-ghost mt-5" onClick={() => void getSupabase().auth.signOut()}>
+            Sair da conta
+          </button>
+        </section>
+      </main>
+    );
+  }
+
+  const activeCompany = companies.find((company) => company.id === activeCompanyId);
+  const canAccessAdmin = isSuperAdmin || companies.some((company) => company.papel === "admin_empresa");
 
   return (
     <main className="min-h-screen">
@@ -2180,6 +2565,44 @@ export default function Home() {
         }
         newItemLabel={view === "tasks" ? "Nova tarefa" : "Novo compromisso"}
         onManageAppointmentTypes={() => setAppointmentTypeManagerOpen(true)}
+        companies={companies}
+        activeCompanyId={activeCompanyId}
+        onSelectCompany={(companyId) => {
+          if (companyId === activeCompanyId) return;
+          loadDataRequestId.current++;
+          if (pendingDelete.current) {
+            const pending = pendingDelete.current;
+            window.clearTimeout(pending.timer);
+            pendingDelete.current = null;
+            setUndoToast(null);
+            void commitAppointmentDelete(pending.item);
+          }
+          if (undoCompletionTimer.current !== null) window.clearTimeout(undoCompletionTimer.current);
+          undoCompletionTimer.current = null;
+          setUndoCompletionToast(null);
+          setReminderToasts([]);
+          setAppointmentForm(null);
+          setContactForm(undefined);
+          setCategoryManagerOpen(false);
+          setAppointmentTypeManagerOpen(false);
+          setDataLoaded(false);
+          setAppointments([]);
+          setCategories([]);
+          setAppointmentTypes([]);
+          setContacts([]);
+          setObservations({});
+          setNotes([]);
+          setActiveCompanyId(companyId);
+          if (session) {
+            try {
+              localStorage.setItem(`minha-agenda:empresa-ativa:${session.user.id}`, companyId);
+            } catch (error) {
+              notify(`Não foi possível salvar a empresa selecionada: ${messageOf(error)}`, "error");
+            }
+          }
+        }}
+        isSuperAdmin={isSuperAdmin}
+        onOpenAdmin={canAccessAdmin ? () => setAdminModalOpen(true) : undefined}
         userName={
           typeof session.user.user_metadata.full_name === "string"
             ? session.user.user_metadata.full_name
@@ -2218,7 +2641,75 @@ export default function Home() {
         }}
       />
 
-      <div className="mx-auto max-w-[1400px] p-4 sm:p-6">
+      {activeCompany?.status === "suspensa" ? (
+        <div className="mx-auto max-w-[720px] p-4 sm:p-12">
+          <div className="card surface rounded-2xl border line p-8 sm:p-12 text-center space-y-6 shadow-xl">
+            <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-rose-500/10 text-rose-500 border border-rose-500/20">
+              <svg className="h-8 w-8" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                <circle cx="12" cy="12" r="10" />
+                <line x1="12" y1="8" x2="12" y2="12" />
+                <line x1="12" y1="16" x2="12.01" y2="16" />
+              </svg>
+            </div>
+
+            <div className="space-y-2">
+              <div className="inline-flex items-center gap-2">
+                <span className="rounded-full px-3 py-0.5 text-xs font-semibold tracking-wide border bg-red-500/10 text-red-600 dark:text-red-400 border-red-500/30">
+                  Suspensa
+                </span>
+                <span className="text-sm font-semibold">{activeCompany.nome}</span>
+              </div>
+              <h2 className="text-2xl font-bold">Acesso suspenso</h2>
+              <p className="text-base text-muted max-w-md mx-auto">
+                Acesso suspenso. Entre em contato com o suporte.
+              </p>
+            </div>
+
+            <p className="text-xs text-muted">
+              Nenhum dado foi excluído. Todas as suas informações permanecem intactas no sistema.
+            </p>
+
+            <div className="pt-2 flex flex-wrap items-center justify-center gap-3">
+              {companies.filter((c) => c.status === "ativa").length > 0 && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    const firstActive = companies.find((c) => c.status === "ativa");
+                    if (firstActive) {
+                      setActiveCompanyId(firstActive.id);
+                      if (session) {
+                        try {
+                          localStorage.setItem(`minha-agenda:empresa-ativa:${session.user.id}`, firstActive.id);
+                        } catch {}
+                      }
+                    }
+                  }}
+                  className="btn btn-primary agenda-action agenda-new-action"
+                >
+                  Alternar para empresa ativa
+                </button>
+              )}
+              {canAccessAdmin && (
+                <button
+                  type="button"
+                  onClick={() => setAdminModalOpen(true)}
+                  className="btn btn-primary agenda-action agenda-new-action"
+                >
+                  Abrir Painel Admin para reativar
+                </button>
+              )}
+              <button
+                type="button"
+                onClick={() => void getSupabase().auth.signOut()}
+                className="btn btn-ghost border line text-xs font-semibold"
+              >
+                Sair da conta
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : (
+        <div className="mx-auto max-w-[1400px] p-4 sm:p-6">
         {/* Visão de Busca Global */}
         {search ? (
           <section className="card p-4 sm:p-6">
@@ -2576,22 +3067,39 @@ export default function Home() {
                     <button
                       className="btn btn-ghost text-lg font-bold"
                       onClick={() => {
-                        showDate(today);
+                        const todayDate = todayInSaoPaulo();
+                        if (parseDate(todayDate).getFullYear() <= yearLimit) {
+                          showDate(todayDate);
+                        } else {
+                          showDate(`${yearLimit}-12-31`);
+                        }
                         setView("month");
                       }}
                     >
                       Ir para hoje
                     </button>
-                    <button
-                      disabled={shownYear === yearLimit && shownMonth === 11}
-                      className="btn btn-ghost disabled:cursor-not-allowed disabled:opacity-40"
-                      onClick={() => {
-                        const d = new Date(shownYear, shownMonth + 1, 1, 12);
-                        if (d.getFullYear() <= yearLimit) showDate(dateKey(d));
-                      }}
-                    >
-                      Próximo →
-                    </button>
+                    <div className="flex items-center gap-2">
+                      <button
+                        disabled={shownYear === yearLimit && shownMonth === 11}
+                        className="btn btn-ghost disabled:cursor-not-allowed disabled:opacity-40"
+                        onClick={() => {
+                          const d = new Date(shownYear, shownMonth + 1, 1, 12);
+                          if (d.getFullYear() <= yearLimit) showDate(dateKey(d));
+                        }}
+                      >
+                        Próximo →
+                      </button>
+                      {shownYear === yearLimit && shownMonth === 11 && yearLimit < 9999 && (
+                        <button
+                          type="button"
+                          className="btn btn-primary text-xs py-1.5 px-3 flex items-center gap-1.5"
+                          onClick={generateNextYear}
+                          title={`Gerar e liberar o ano de ${yearLimit + 1}`}
+                        >
+                          <span aria-hidden="true">＋</span> Gerar {yearLimit + 1}
+                        </button>
+                      )}
+                    </div>
                   </div>
 
                   <CalendarMonth
@@ -2613,7 +3121,6 @@ export default function Home() {
                         </svg>
                         <div><p className="font-semibold">Mês sem compromissos</p><p className="muted text-sm">Adicione um compromisso para este período.</p></div>
                       </div>
-                      <button type="button" className="btn btn-primary" onClick={() => setAppointmentForm({ ...EMPTY_APPOINTMENT, data: selectedDate })}>+ Novo compromisso</button>
                     </div>
                   )}
 
@@ -2639,15 +3146,6 @@ export default function Home() {
                   </div>
                   <h2 className="month-day-year">{parseDate(selectedDate).getFullYear()}</h2>
                 </div>
-                <button
-                  className="btn btn-primary month-new-button"
-                  aria-label={`Novo compromisso em ${formatDate(selectedDate)}`}
-                  aria-keyshortcuts="N"
-                  title="Novo compromisso (N)"
-                  onClick={() => setAppointmentForm({ ...EMPTY_APPOINTMENT, data: selectedDate })}
-                >
-                  <span aria-hidden="true">＋</span> Novo
-                </button>
               </div>
 
               {selectedHoliday && (
@@ -2671,7 +3169,23 @@ export default function Home() {
 
               <div className="month-agenda-heading mb-2 flex items-center justify-between">
                 <h3 className="font-semibold">Agenda do dia</h3>
-                <span className="muted text-xs">{selectedEvents.length} item(ns)</span>
+                <div className="flex items-center gap-3">
+                  <span className="muted text-xs">
+                    {selectedEvents.length} {selectedEvents.length === 1 ? "item" : "itens"}
+                  </span>
+                  {selectedEvents.length > 0 && (
+                    <button
+                      type="button"
+                      className="btn btn-primary month-new-button"
+                      aria-label={`Adicionar compromisso em ${formatDate(selectedDate)}`}
+                      aria-keyshortcuts="N"
+                      title="Adicionar compromisso (N)"
+                      onClick={() => setAppointmentForm({ ...EMPTY_APPOINTMENT, data: selectedDate })}
+                    >
+                      <span aria-hidden="true">＋</span> Adicionar
+                    </button>
+                  )}
+                </div>
               </div>
 
               <div className="month-day-agenda space-y-2">
@@ -2726,6 +3240,7 @@ export default function Home() {
           </div>
         )}
       </div>
+      )}
 
       {appointmentForm && (
         <AppointmentFormModal
@@ -2780,7 +3295,15 @@ export default function Home() {
           onClose={() => setCategoryManagerOpen(false)}
         />
       )}
-      {appointmentTypeManagerOpen && (
+            {adminModalOpen && (
+        <SuperAdminModal
+          onClose={() => setAdminModalOpen(false)}
+          onCompanyChanged={() => {
+            void loadData();
+          }}
+        />
+      )}
+{appointmentTypeManagerOpen && (
         <AppointmentTypeManagerModal
           appointmentTypes={managedAppointmentTypes}
           busy={busy}

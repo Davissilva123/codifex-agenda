@@ -9,6 +9,7 @@ const corsHeaders = {
 type Appointment = {
   id: string;
   user_id: string;
+  empresa_id: string;
   titulo: string;
   tipo: "compromisso" | "tarefa";
   data: string;
@@ -81,7 +82,7 @@ Deno.serve(async (request: Request) => {
   const tomorrow = addDays(today, 1);
   const { data: appointments, error: appointmentError } = await supabase
     .from("agendamentos")
-    .select("id,user_id,titulo,tipo,data,hora_inicio,alerta_minutos,recorrencia,concluido,alerta_enviado_em,alerta_enviado_para,adiado_ate")
+    .select("id,user_id,empresa_id,titulo,tipo,data,hora_inicio,alerta_minutos,recorrencia,concluido,alerta_enviado_em,alerta_enviado_para,adiado_ate")
     .eq("concluido", false)
     .not("alerta_minutos", "is", null)
     .lte("data", tomorrow)
@@ -101,7 +102,9 @@ Deno.serve(async (request: Request) => {
     if (!occurrenceDate) continue;
 
     const { data: subscriptions, error: subscriptionsError } = await supabase
-      .from("push_subscriptions").select("id,subscription").eq("user_id", appointment.user_id);
+      .from("push_subscriptions").select("id,subscription")
+      .eq("user_id", appointment.user_id)
+      .eq("empresa_id", appointment.empresa_id);
     if (subscriptionsError) {
       console.error("Erro ao consultar inscrições push", appointment.id, subscriptionsError.message);
       results.failed++;
@@ -164,14 +167,16 @@ Deno.serve(async (request: Request) => {
 
   const { data: contacts, error: contactError } = await supabase
     .from("contatos")
-    .select("id,user_id,nome,aniversario")
+    .select("id,user_id,empresa_id,nome,aniversario")
     .not("aniversario", "is", null);
   if (contactError) return Response.json({ error: contactError.message }, { status: 500, headers: corsHeaders });
   for (const contact of contacts || []) {
     const birthday = String(contact.aniversario).slice(5, 10) === today.slice(5, 10);
     if (!birthday) continue;
     const { data: subscriptions, error: subscriptionsError } = await supabase
-      .from("push_subscriptions").select("id,subscription").eq("user_id", contact.user_id);
+      .from("push_subscriptions").select("id,subscription")
+      .eq("user_id", contact.user_id)
+      .eq("empresa_id", contact.empresa_id);
     if (subscriptionsError) {
       console.error("Erro ao consultar inscrições para aniversário", contact.id, subscriptionsError.message);
       results.failed++;
@@ -179,7 +184,7 @@ Deno.serve(async (request: Request) => {
     }
     if (!subscriptions?.length) continue;
     const { data: claim, error: claimError } = await supabase.from("aniversario_alertas_enviados")
-      .upsert({ user_id: contact.user_id, contato_id: contact.id, data: today }, { onConflict: "contato_id,data", ignoreDuplicates: true })
+      .upsert({ user_id: contact.user_id, empresa_id: contact.empresa_id, contato_id: contact.id, data: today }, { onConflict: "contato_id,data", ignoreDuplicates: true })
       .select("id");
     if (claimError) {
       console.error("Erro ao reservar alerta de aniversário", contact.id, claimError.message);
@@ -212,7 +217,7 @@ Deno.serve(async (request: Request) => {
     }
     if (!deliverySucceeded) {
       const { error: releaseError } = await supabase.from("aniversario_alertas_enviados").delete()
-        .eq("contato_id", contact.id).eq("data", today);
+        .eq("contato_id", contact.id).eq("data", today).eq("empresa_id", contact.empresa_id);
       if (releaseError) {
         console.error("Falha ao liberar alerta de aniversário sem entrega", contact.id, releaseError.message);
         results.failed++;

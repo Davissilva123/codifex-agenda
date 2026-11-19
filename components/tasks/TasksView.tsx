@@ -155,9 +155,9 @@ export function TasksView({
         <div>
           <h2 className="text-xl sm:text-2xl font-bold">Tarefas</h2>
           <p className="muted mt-1 text-sm">
-            {yearTasks.length} cadastrada(s) · {openTasks.length} em aberto ·{" "}
+            {yearTasks.length} {yearTasks.length === 1 ? "cadastrada" : "cadastradas"} · {openTasks.length} em aberto ·{" "}
             <span className={overdueTasks.length ? "text-red-600 font-semibold" : ""}>
-              {overdueTasks.length} atrasada(s)
+              {overdueTasks.length} {overdueTasks.length === 1 ? "atrasada" : "atrasadas"}
             </span>
           </p>
         </div>
@@ -361,8 +361,17 @@ export function TasksView({
             )}
           </div>
           {upcomingTask && (
-            <button type="button" className="task-upcoming-complete" aria-label={`Concluir ${upcomingTask.titulo}`} onClick={() => onToggleComplete(upcomingTask)}>
-              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12 4 4L19 6" /></svg>
+            <button
+              type="button"
+              className="task-upcoming-complete-btn"
+              aria-label={`Concluir ${upcomingTask.titulo}`}
+              title="Marcar tarefa como concluída"
+              onClick={() => onToggleComplete(upcomingTask)}
+            >
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                <path d="m5 12 4 4L19 6" />
+              </svg>
+              <span>Concluir tarefa</span>
             </button>
           )}
         </aside>

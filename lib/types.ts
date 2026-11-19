@@ -8,6 +8,7 @@ export type View = "day" | "week" | "tasks" | "month" | "year" | "contacts" | "n
 export interface Appointment {
   id: string;
   user_id: string;
+  empresa_id?: string;
   titulo: string;
   data: string;
   hora_inicio: string | null;
@@ -44,6 +45,7 @@ export interface AppointmentReminder {
 export interface AgendaCategory {
   id: string;
   user_id: string;
+  empresa_id?: string;
   nome: string;
   cor: string;
   created_at?: string;
@@ -52,6 +54,7 @@ export interface AgendaCategory {
 export interface AgendaAppointmentType {
   id: string;
   user_id: string;
+  empresa_id?: string;
   nome: string;
   tipo_base?: AppointmentBaseType | null;
   created_at?: string;
@@ -60,6 +63,7 @@ export interface AgendaAppointmentType {
 export interface Observation {
   id: string;
   user_id: string;
+  empresa_id?: string;
   data: string;
   anotacao: string;
 }
@@ -67,6 +71,7 @@ export interface Observation {
 export interface FreeNote {
   id: string;
   user_id: string;
+  empresa_id?: string;
   titulo: string;
   conteudo: string;
   cor: string;
@@ -78,6 +83,7 @@ export interface FreeNote {
 export interface Contact {
   id: string;
   user_id: string;
+  empresa_id?: string;
   nome: string;
   email: string;
   empresa: string;

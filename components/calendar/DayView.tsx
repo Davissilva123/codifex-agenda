@@ -134,13 +134,15 @@ export function DayView({
                 )}
               </div>
             </div>
-            <button
-              type="button"
-              className="btn btn-primary"
-              onClick={() => onNewAppointment(selectedDate)}
-            >
-              ＋ Novo compromisso
-            </button>
+            {appointments.length > 0 && (
+              <button
+                type="button"
+                className="btn btn-primary"
+                onClick={() => onNewAppointment(selectedDate)}
+              >
+                ＋ Adicionar
+              </button>
+            )}
           </div>
 
           {holiday && (
@@ -184,15 +186,12 @@ export function DayView({
           </div>
         </section>
 
-        {/* Coluna 2: Observações do Dia */}
+        {/* Coluna 2: Anotações do Dia */}
         <aside className="card day-notes p-4 sm:p-6 flex flex-col justify-between">
           <div>
-            <div className="mb-3 flex items-start justify-between gap-3">
-              <div>
-                <p className="muted text-xs font-semibold uppercase tracking-wider">Anotações do Dia</p>
-                <h2 className="mt-1 text-xl font-bold">Observações</h2>
-              </div>
-              <span className="muted pt-1 text-xs">{savingNote ? "Salvando..." : "Salvo"}</span>
+            <div className="mb-3 flex items-center justify-between gap-3">
+              <h2 className="text-xl font-bold">Anotações do dia</h2>
+              <span className="muted text-xs">{savingNote ? "Salvando..." : "Salvo"}</span>
             </div>
 
             <p className="muted mb-2 text-xs">Vinculadas somente a {formatDate(selectedDate)}.</p>
