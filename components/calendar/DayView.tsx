@@ -146,17 +146,19 @@ export function DayView({
           </div>
 
           {holiday && (
-            <div className="mb-3 rounded-lg bg-red-50 p-3 text-sm text-red-700 dark:bg-red-950 dark:text-red-200">
-              🇧🇷 {holiday}
+            <div className="mb-3 rounded-xl border border-red-500/20 bg-red-500/10 p-3 text-xs sm:text-sm font-medium text-red-600 dark:text-red-400 flex items-center gap-2 shadow-sm">
+              <span className="text-base">🇧🇷</span>
+              <span>{holiday}</span>
             </div>
           )}
 
           {selectedContacts.map((contact) => (
             <div
               key={contact.id}
-              className="mb-3 rounded-lg bg-pink-50 p-3 text-sm text-pink-800 dark:bg-pink-950 dark:text-pink-100"
+              className="mb-3 rounded-xl border border-pink-500/20 bg-pink-500/10 p-3 text-xs sm:text-sm font-medium text-pink-700 dark:text-pink-300 flex items-center gap-2 shadow-sm"
             >
-              🎂 Aniversário de {contact.nome}
+              <span className="text-base">🎂</span>
+              <span>Aniversário de <strong>{contact.nome}</strong></span>
             </div>
           ))}
 

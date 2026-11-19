@@ -2407,18 +2407,51 @@ export default function Home() {
   if (!session) {
     return (
       <main className="auth-page flex min-h-screen items-center justify-center p-4">
-        <div className="auth-page-decoration" aria-hidden="true">
-          <span className="auth-calendar-shape auth-calendar-shape-one" />
-          <span className="auth-calendar-shape auth-calendar-shape-two" />
-          <span className="auth-calendar-shape auth-calendar-shape-three" />
-        </div>
-        <form onSubmit={authenticate} className="card auth-card w-full max-w-md p-7 shadow-lg">
+
+        <form onSubmit={authenticate} className="card auth-card w-full max-w-md p-6 sm:p-8">
           <div className="mb-6 text-center">
-            <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center">
-              <img src="/icon.png" alt="CODIFEX AGENDAS" className="h-16 w-16 rounded-2xl object-contain shadow-md" />
+            <div className="mx-auto mb-3 relative flex h-20 w-20 items-center justify-center">
+              <div className="absolute inset-0 rounded-2xl bg-blue-500/20 blur-xl" />
+              <img src="/icon.png" alt="CODIFEX AGENDAS" className="relative h-16 w-16 rounded-2xl object-contain shadow-xl border border-white/10" />
             </div>
-            <h1 className="text-2xl font-bold">CODIFEX AGENDAS</h1>
-            <p className="muted mt-2">Compromissos, tarefas e prazos do escritório em um só lugar.</p>
+            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-semibold bg-blue-500/10 text-blue-400 border border-blue-500/25 mb-2.5 tracking-wider uppercase">
+              Avisnet System
+            </div>
+            <h1 className="text-2xl font-bold tracking-tight text-white">CODIFEX AGENDAS</h1>
+            <p className="muted mt-1.5 text-xs sm:text-sm">Compromissos, tarefas e prazos do escritório em um só lugar.</p>
+          </div>
+
+          <div className="grid grid-cols-2 gap-1 rounded-xl bg-[var(--track)] p-1 border line mb-5">
+            <button
+              type="button"
+              className={`py-2 px-3 rounded-lg text-xs font-semibold transition-all ${
+                authMode === "login"
+                  ? "bg-blue-600 text-white shadow-md font-bold"
+                  : "text-[var(--muted)] hover:text-[var(--text)]"
+              }`}
+              onClick={() => {
+                setAuthMode("login");
+                setPasswordVisible(false);
+                setAuthError("");
+              }}
+            >
+              Entrar
+            </button>
+            <button
+              type="button"
+              className={`py-2 px-3 rounded-lg text-xs font-semibold transition-all ${
+                authMode === "signup"
+                  ? "bg-blue-600 text-white shadow-md font-bold"
+                  : "text-[var(--muted)] hover:text-[var(--text)]"
+              }`}
+              onClick={() => {
+                setAuthMode("signup");
+                setPasswordVisible(false);
+                setAuthError("");
+              }}
+            >
+              Criar conta
+            </button>
           </div>
           <label className="mb-3 block text-sm font-medium">
             E-mail
@@ -2464,35 +2497,34 @@ export default function Home() {
               </button>
             </span>
           </label>
-          {authError && <p className="mt-3 text-sm text-red-600" role="alert">{authError}</p>}
+          {authError && (
+            <div className="mt-3.5 p-3 rounded-xl bg-red-500/10 border border-red-500/25 text-red-400 text-xs flex items-start gap-2" role="alert">
+              <svg className="w-4 h-4 flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+              </svg>
+              <span>{authError}</span>
+            </div>
+          )}
           {authError && (
             <button
               type="button"
-              className="btn btn-ghost mt-2 w-full"
+              className="btn btn-ghost mt-2 w-full text-xs"
               onClick={() => {
                 setAuthReady(false);
                 setAuthRetry((attempt) => attempt + 1);
               }}
             >
-              Tentar conectar novamente
+              Tentar reconectar
             </button>
           )}
-          <button disabled={authBusy} className="btn btn-primary mt-5 w-full">
-            {authBusy ? "Aguarde..." : authMode === "login" ? "Entrar" : "Criar conta"}
+          <button disabled={authBusy} className="btn btn-primary mt-6 w-full py-3 text-sm font-semibold shadow-lg shadow-blue-600/25">
+            {authBusy ? "Aguarde..." : authMode === "login" ? "Entrar na Agenda" : "Criar Minha Conta"}
           </button>
-          <button
-            type="button"
-            className="btn btn-ghost mt-2 w-full text-xs font-semibold"
-            onClick={() => {
-              setAuthMode(authMode === "login" ? "signup" : "login");
-              setPasswordVisible(false);
-              setAuthError("");
-            }}
-          >
-            {authMode === "login" ? "Ainda não tem conta? Criar conta" : "Já tem conta? Entrar"}
-          </button>
-          <p className="muted mt-4 text-center text-xs">
-            O primeiro acesso precisa de internet. Depois, use a agenda instalada offline neste dispositivo.
+          <p className="muted mt-4 text-center text-xs flex items-center justify-center gap-1.5 opacity-80">
+            <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+            </svg>
+            <span>Primeiro acesso requer internet; depois funciona offline</span>
           </p>
         </form>
       </main>

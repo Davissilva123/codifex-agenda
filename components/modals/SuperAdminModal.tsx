@@ -1737,45 +1737,48 @@ export function SuperAdminModal({ onClose, onCompanyChanged }: SuperAdminModalPr
               <div>
                 <p className="muted text-xs font-semibold uppercase tracking-wider mb-3">Visão Geral</p>
                 <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
-                  <div className="rounded-xl border line p-3 sm:p-4 surface flex flex-col justify-between">
+                  <div className="rounded-2xl border line p-4 sm:p-5 surface flex flex-col justify-between transition-all hover:border-emerald-500/40 hover:shadow-md">
                     <div className="flex items-center justify-between">
                       <span className="muted text-[11px] font-semibold uppercase tracking-wider">Ativas</span>
-                      <span className="w-2 h-2 rounded-full bg-emerald-500" />
+                      <span className="relative flex h-2.5 w-2.5">
+                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-60" />
+                        <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500" />
+                      </span>
                     </div>
-                    <p className="text-2xl sm:text-3xl font-bold mt-2 text-emerald-600 dark:text-emerald-400">
+                    <p className="text-2xl sm:text-3xl font-bold mt-2 font-mono tabular-nums text-emerald-600 dark:text-emerald-400">
                       {overviewMetrics.ativas}
                     </p>
                     <p className="muted text-[11px] mt-1">Empresas em operação</p>
                   </div>
 
-                  <div className="rounded-xl border line p-3 sm:p-4 surface flex flex-col justify-between">
+                  <div className="rounded-2xl border line p-4 sm:p-5 surface flex flex-col justify-between transition-all hover:border-red-500/40 hover:shadow-md">
                     <div className="flex items-center justify-between">
                       <span className="muted text-[11px] font-semibold uppercase tracking-wider">Suspensas</span>
-                      <span className="w-2 h-2 rounded-full bg-red-500" />
+                      <span className="h-2.5 w-2.5 rounded-full bg-red-500 ring-2 ring-red-500/20" />
                     </div>
-                    <p className="text-2xl sm:text-3xl font-bold mt-2 text-red-600 dark:text-red-400">
+                    <p className="text-2xl sm:text-3xl font-bold mt-2 font-mono tabular-nums text-red-600 dark:text-red-400">
                       {overviewMetrics.suspensas}
                     </p>
                     <p className="muted text-[11px] mt-1">Acesso bloqueado</p>
                   </div>
 
-                  <div className="rounded-xl border line p-3 sm:p-4 surface flex flex-col justify-between">
+                  <div className="rounded-2xl border line p-4 sm:p-5 surface flex flex-col justify-between transition-all hover:border-blue-500/40 hover:shadow-md">
                     <div className="flex items-center justify-between">
                       <span className="muted text-[11px] font-semibold uppercase tracking-wider">Usuários</span>
-                      <span className="w-2 h-2 rounded-full bg-[var(--primary)]" />
+                      <span className="h-2.5 w-2.5 rounded-full bg-[var(--primary)] ring-2 ring-blue-500/20" />
                     </div>
-                    <p className="text-2xl sm:text-3xl font-bold mt-2 text-[var(--primary)]">
+                    <p className="text-2xl sm:text-3xl font-bold mt-2 font-mono tabular-nums text-[var(--primary)]">
                       {overviewMetrics.totalUsuarios}
                     </p>
                     <p className="muted text-[11px] mt-1">Membros ativos</p>
                   </div>
 
-                  <div className="rounded-xl border line p-3 sm:p-4 surface flex flex-col justify-between">
+                  <div className="rounded-2xl border line p-4 sm:p-5 surface flex flex-col justify-between transition-all hover:border-amber-500/40 hover:shadow-md">
                     <div className="flex items-center justify-between">
                       <span className="muted text-[11px] font-semibold uppercase tracking-wider">Vencendo</span>
-                      <span className="w-2 h-2 rounded-full bg-amber-500" />
+                      <span className="h-2.5 w-2.5 rounded-full bg-amber-500 ring-2 ring-amber-500/20" />
                     </div>
-                    <p className="text-2xl sm:text-3xl font-bold mt-2 text-amber-500">
+                    <p className="text-2xl sm:text-3xl font-bold mt-2 font-mono tabular-nums text-amber-500">
                       {overviewMetrics.vencendo7Dias}
                     </p>
                     <p className="muted text-[11px] mt-1">Em até 7 dias</p>

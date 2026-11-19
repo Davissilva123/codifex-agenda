@@ -9,13 +9,17 @@ import { useClock } from "@/lib/useClock";
 
 export function PriorityPill({ priority }: { priority: Priority }) {
   const styles: Record<Priority, string> = {
-    urgente: "bg-red-100 text-red-700 dark:bg-red-950 dark:text-red-200 border border-red-300 dark:border-red-900",
-    alta: "bg-orange-100 text-orange-700 dark:bg-orange-950 dark:text-orange-200 border border-orange-300 dark:border-orange-900",
-    normal: "bg-blue-100 text-blue-700 dark:bg-blue-950 dark:text-blue-200 border border-blue-300 dark:border-blue-900",
-    baixa: "bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-300 border border-gray-300 dark:border-gray-700",
+    urgente: "bg-red-500/12 text-red-600 dark:text-red-400 border border-red-500/25 shadow-sm",
+    alta: "bg-amber-500/12 text-amber-600 dark:text-amber-400 border border-amber-500/25 shadow-sm",
+    normal: "bg-blue-500/12 text-blue-600 dark:text-blue-400 border border-blue-500/25 shadow-sm",
+    baixa: "bg-slate-500/12 text-slate-500 dark:text-slate-400 border border-slate-500/20",
   };
   const labels: Record<Priority, string> = { urgente: "Urgente", alta: "Alta", normal: "Normal", baixa: "Baixa" };
-  return <span className={`rounded-full px-2 py-0.5 text-[10px] font-semibold tracking-wide ${styles[priority || "normal"]}`}>{labels[priority || "normal"]}</span>;
+  return (
+    <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-semibold tracking-wider uppercase ${styles[priority || "normal"]}`}>
+      {labels[priority || "normal"]}
+    </span>
+  );
 }
 
 type TaskIcon = "calendar" | "alert" | "user" | "clock" | "repeat" | "briefcase" | "pin" | "video";
