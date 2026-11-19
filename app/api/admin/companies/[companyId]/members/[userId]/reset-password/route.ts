@@ -23,10 +23,15 @@ export async function POST(
     // 2. Disparar link de redefinição / e-mail de recuperação
     let actionLink: string | undefined;
 
+    const confirmationRedirectUrl = process.env.NEXT_PUBLIC_SITE_URL?.trim() || "https://davissilva123.github.io/codifex-agenda/";
+
     try {
       const { data: linkData, error: linkError } = await admin.auth.admin.generateLink({
         type: "recovery",
         email,
+        options: {
+          redirectTo: confirmationRedirectUrl,
+        },
       });
 
       if (!linkError && linkData?.properties?.action_link) {
@@ -36,7 +41,9 @@ export async function POST(
       // Ignora erro se generateLink falhar e tenta resetPasswordForEmail
     }
 
-    const { error: resetError } = await admin.auth.resetPasswordForEmail(email);
+    const { error: resetError } = await admin.auth.resetPasswordForEmail(email, {
+      redirectTo: confirmationRedirectUrl,
+    });
 
     if (resetError && !actionLink) {
       throw new Error(`Não foi possível enviar o e-mail de redefinição: ${resetError.message}`);

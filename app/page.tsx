@@ -715,6 +715,17 @@ export default function Home() {
   }, [session, activeCompanyId]);
 
   useEffect(() => {
+    // Se a página carregou com token ou código de confirmação no link (ex: por e-mail antigo ou local)
+    // redireciona imediatamente para a tela dedicada de confirmação
+    if (typeof window !== "undefined") {
+      const search = window.location.search;
+      const hash = window.location.hash;
+      if (search.includes("code=") || hash.includes("access_token=") || search.includes("error_description=")) {
+        window.location.replace(`/confirmado${search}${hash}`);
+        return;
+      }
+    }
+
     let active = true;
     let timeout: number | undefined;
     setAuthReady(false);
@@ -1369,25 +1380,12 @@ export default function Home() {
     setAuthError("");
     try {
       const supabase = getSupabase();
-      // Define a URL pública de confirmação, evitando enviar IPs locais ou 127.0.0.1 por e-mail
-      let redirectUrl: string | undefined;
+      // Define a URL pública de confirmação, garantindo redirecionar para o GitHub Pages
+      const defaultPublicConfirmationUrl = "https://davissilva123.github.io/codifex-agenda/";
       const configuredSiteUrl = process.env.NEXT_PUBLIC_SITE_URL?.trim();
-
-      if (configuredSiteUrl) {
-        redirectUrl = `${configuredSiteUrl.replace(/\/$/, "")}/confirmado`;
-      } else if (typeof window !== "undefined") {
-        const host = window.location.hostname;
-        const isLocal =
-          host === "127.0.0.1" ||
-          host === "localhost" ||
-          host === "0.0.0.0" ||
-          host.startsWith("192.168.") ||
-          host.startsWith("10.") ||
-          host.startsWith("172.");
-        if (!isLocal) {
-          redirectUrl = `${window.location.origin}/confirmado`;
-        }
-      }
+      const redirectUrl = configuredSiteUrl
+        ? `${configuredSiteUrl.replace(/\/$/, "")}/`
+        : defaultPublicConfirmationUrl;
 
       const result =
         authMode === "login"
@@ -1395,7 +1393,7 @@ export default function Home() {
           : await supabase.auth.signUp({
               email: email.trim(),
               password,
-              options: redirectUrl ? { emailRedirectTo: redirectUrl } : undefined,
+              options: { emailRedirectTo: redirectUrl },
             });
       if (result.error) throw result.error;
       if (authMode === "signup" && !result.data.session) {

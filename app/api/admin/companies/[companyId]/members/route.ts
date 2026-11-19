@@ -371,7 +371,9 @@ export async function POST(
       }, { status: 201 });
     } else {
       // Opção A: Convidar usuário por e-mail (inviteUserByEmail)
+      const confirmationRedirectUrl = process.env.NEXT_PUBLIC_SITE_URL?.trim() || "https://davissilva123.github.io/codifex-agenda/";
       const { data: inviteData, error: inviteError } = await admin.auth.admin.inviteUserByEmail(email, {
+        redirectTo: confirmationRedirectUrl,
         data: {
           empresa_id: companyId,
         },
